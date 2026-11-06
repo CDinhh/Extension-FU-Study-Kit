@@ -139,6 +139,9 @@
     renderPermission();
   });
 
+  // The permission prompt can outlive (or close) the popup, so react to the grant itself.
+  chrome.permissions.onAdded.addListener(renderPermission);
+  chrome.permissions.onRemoved.addListener(renderPermission);
   FuoStorage.onSiteChanged(() => renderSites());
   renderSites();
   renderSyncError();
