@@ -1,121 +1,287 @@
-.fuo-check {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  margin-right: 8px;
-  vertical-align: middle;
-  cursor: pointer;
-  accent-color: #2ea043;
+/* Injected into the forum list/thread pages. Font is inherited from the forum on purpose. */
+.fuo-check,
+.fuo-badge,
+.fuo-progress {
+  --fuo-done: #34d399;
+  --fuo-study: #60a5fa;
+  --fuo-hair: rgba(255, 255, 255, 0.14);
+  --fuo-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* --- Checkbox: native input (keeps keyboard/a11y), custom look, animated tick --- */
+.fuo-check {
+  appearance: none;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0 8px 0 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  vertical-align: -3px;
+  cursor: pointer;
+  transition:
+    transform 400ms var(--fuo-ease),
+    background-color 400ms var(--fuo-ease),
+    border-color 400ms var(--fuo-ease);
+}
+
+.fuo-check::after {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background: #04130c;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0;
+  transform: scale(0.3) rotate(-12deg);
+  transition:
+    transform 500ms var(--fuo-ease),
+    opacity 300ms var(--fuo-ease);
+}
+
+.fuo-check:hover {
+  border-color: rgba(52, 211, 153, 0.7);
+}
+
+.fuo-check:active {
+  transform: scale(0.9);
+}
+
+.fuo-check:focus-visible {
+  outline: 2px solid rgba(52, 211, 153, 0.6);
+  outline-offset: 2px;
+}
+
+.fuo-check:checked {
+  border-color: var(--fuo-done);
+  background: var(--fuo-done);
+}
+
+.fuo-check:checked::after {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- Row states --- */
 .fuo-done .structItem-title > a:not(.labelLink) {
   text-decoration: line-through;
+  text-decoration-color: rgba(52, 211, 153, 0.5);
   opacity: 0.55;
 }
 
 .fuo-done .structItem-cell--main {
-  background: rgba(46, 160, 67, 0.08);
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.07), transparent 60%);
 }
 
-.fuo-learning:not(.fuo-done) .structItem-cell--main {
-  background: rgba(56, 139, 253, 0.05);
+.fuo-learning .structItem-cell--main {
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.06), transparent 60%);
 }
 
+/* --- Progress: compact text line above a two-tone track --- */
 .fuo-progress {
-  margin: 8px 0;
-  padding: 6px 12px;
-  border-radius: 6px;
-  background: rgba(46, 160, 67, 0.15);
-  color: #3fb950;
+  margin: 10px 0;
+  padding: 10px 14px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+}
+
+.fuo-progress__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+}
+
+.fuo-progress__total {
+  color: var(--fuo-done);
   font-weight: 600;
 }
 
-/* Status badges */
+.fuo-progress__page {
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.fuo-progress__track {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.fuo-progress__fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 900ms var(--fuo-ease);
+}
+
+.fuo-progress__fill--learn {
+  background: rgba(96, 165, 250, 0.55);
+}
+
+.fuo-progress__fill--done {
+  background: linear-gradient(90deg, #10b981, var(--fuo-done));
+}
+
+/* --- Status pills --- */
 .fuo-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   margin-left: 8px;
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 2px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.45;
   vertical-align: middle;
   text-decoration: none !important;
   white-space: nowrap;
   user-select: none;
   cursor: pointer;
-  transition: transform 0.1s ease, filter 0.15s ease, background-color 0.15s ease;
+  animation: fuo-badge-in 500ms var(--fuo-ease) both;
+  transition: transform 400ms var(--fuo-ease);
 }
 
-.fuo-badge:hover {
-  filter: brightness(1.15);
-}
-
-.fuo-badge--learning {
-  background: rgba(56, 139, 253, 0.15);
-  color: #58a6ff;
-  border: 1px solid rgba(56, 139, 253, 0.4);
-}
-
-.fuo-badge--learning .fuo-badge__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #58a6ff;
-  box-shadow: 0 0 6px rgba(88, 166, 255, 0.6);
-  animation: fuo-pulse 2s infinite ease-in-out;
-}
-
-@keyframes fuo-pulse {
-  0%, 100% {
-    opacity: 0.5;
-    transform: scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
+.fuo-badge:active {
+  transform: scale(0.97);
 }
 
 .fuo-badge--done {
-  background: rgba(46, 160, 67, 0.15);
-  color: #3fb950;
-  border: 1px solid rgba(46, 160, 67, 0.35);
+  border-color: rgba(52, 211, 153, 0.3);
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--fuo-done);
 }
 
+.fuo-badge--learning {
+  border-color: rgba(96, 165, 250, 0.32);
+  background: rgba(96, 165, 250, 0.1);
+  color: var(--fuo-study);
+}
+
+.fuo-badge__ico,
+.fuo-badge__remove svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fuo-badge__dot {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fuo-study);
+}
+
+.fuo-badge__dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--fuo-study);
+  animation: fuo-ping 2s var(--fuo-ease) infinite;
+}
+
+/* The × only shows when the pill is hovered or focused. */
 .fuo-badge__remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  margin-left: 2px;
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin: 0 -4px 0 -2px;
+  padding: 0;
   border: none;
   border-radius: 50%;
   background: transparent;
   color: inherit;
-  font-size: 11px;
-  line-height: 1;
   cursor: pointer;
-  opacity: 0.5;
-  padding: 0;
-  transition: opacity 0.15s, background-color 0.15s;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 300ms var(--fuo-ease),
+    transform 400ms var(--fuo-ease),
+    background-color 300ms var(--fuo-ease);
 }
 
-.fuo-badge__remove:hover {
+.fuo-badge:hover .fuo-badge__remove,
+.fuo-badge:focus-within .fuo-badge__remove {
+  opacity: 0.8;
+  transform: none;
+}
+
+.fuo-badge__remove:hover,
+.fuo-badge__remove:focus-visible {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.14);
+  outline: none;
 }
 
-/* Thread page title checkbox and badge */
+/* Thread page title */
 .p-title-value .fuo-check {
+  width: 20px;
+  height: 20px;
   margin-right: 10px;
+  vertical-align: -2px;
 }
 
 .p-title-value .fuo-badge {
-  font-size: 14px;
-  padding: 3px 10px;
   margin-left: 12px;
+  padding: 3px 11px;
+  font-size: 13px;
+}
+
+@keyframes fuo-badge-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fuo-ping {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  80%,
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fuo-check,
+  .fuo-check::after,
+  .fuo-badge,
+  .fuo-badge__remove,
+  .fuo-progress__fill {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .fuo-badge__dot::after {
+    animation: none;
+  }
 }

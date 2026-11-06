@@ -80,10 +80,11 @@
     badge.dataset.fuoDone = String(done);
     badge.title = done ? "Đã ôn xong đề này" : `${labelText} (Bấm × để xoá trạng thái)`;
     badge.innerHTML = done
-      ? `<span class="fuo-badge__text">✓ ${labelText}</span>`
+      ? `<svg class="fuo-badge__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+        <span class="fuo-badge__text">${labelText}</span>`
       : `<span class="fuo-badge__dot"></span>
         <span class="fuo-badge__text">${labelText}</span>
-        <button type="button" class="fuo-badge__remove" title="Xoá trạng thái đang học">×</button>`;
+        <button type="button" class="fuo-badge__remove" title="Xoá trạng thái đang học" aria-label="Xoá trạng thái đang học"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button>`;
 
     badge.onclick = (e) => {
       if (e.target.closest(".fuo-badge__remove")) {
@@ -114,21 +115,29 @@
     if (!bar) {
       bar = document.createElement("div");
       bar.className = "fuo-progress";
+      bar.innerHTML = `<div class="fuo-progress__row"><span class="fuo-progress__total"></span><span class="fuo-progress__page"></span></div>
+        <div class="fuo-progress__track"><i class="fuo-progress__fill fuo-progress__fill--learn"></i><i class="fuo-progress__fill fuo-progress__fill--done"></i></div>`;
       items[0].parentElement.parentElement.insertBefore(bar, items[0].parentElement);
     }
     const { done: totalDone, studying: totalLearning } = FuoCore.countSite(cache);
     const doneOnPage = document.querySelectorAll(".structItem--thread.fuo-done").length;
     const learningOnPage = document.querySelectorAll(".structItem--thread.fuo-learning").length;
 
-    let text = "";
-    if (totalLearning > 0 || learningOnPage > 0) {
-      text = `Đã ôn: ${totalDone} đề · Đang học: ${totalLearning} đề (trang này: ${doneOnPage} đã ôn, ${learningOnPage} đang học / ${items.length} đề)`;
-    } else {
-      text = `Đã ôn: ${totalDone} đề tổng cộng (trang này: ${doneOnPage}/${items.length})`;
-    }
+    const total = `Đã ôn ${totalDone} đề` + (totalLearning ? ` · Đang học ${totalLearning}` : "");
+    const page = `Trang này ${doneOnPage}/${items.length}` + (learningOnPage ? ` · ${learningOnPage} đang học` : "");
 
     // Skip no-op writes, otherwise the MutationObserver would loop forever.
-    if (bar.textContent !== text) bar.textContent = text;
+    const key = `${total}|${page}`;
+    if (bar.dataset.fuoKey === key) return;
+    bar.dataset.fuoKey = key;
+    bar.querySelector(".fuo-progress__total").textContent = total;
+    bar.querySelector(".fuo-progress__page").textContent = page;
+    // Next frame, so a freshly inserted bar animates its fill from empty.
+    requestAnimationFrame(() => {
+      bar.querySelector(".fuo-progress__fill--done").style.transform = `scaleX(${doneOnPage / items.length})`;
+      bar.querySelector(".fuo-progress__fill--learn").style.transform =
+        `scaleX(${(doneOnPage + learningOnPage) / items.length})`;
+    });
   };
 
   const makeCheckbox = (id) => {

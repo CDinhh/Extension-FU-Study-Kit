@@ -53,11 +53,30 @@
     return node;
   };
 
+  // Thin-stroke inline icons (static markup, no user data).
+  const svg = (d) => `<svg class="fuo-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+  const ICONS = {
+    caret: svg("M6.5 9.5 12 15l5.5-5.5"),
+    flag: svg("M5.5 21V4.5m0 0c4.5-2.5 8.5 2.5 13 0v9c-4.5 2.5-8.5-2.5-13 0"),
+    arrow: svg("M5 12h14m0 0-5-5m5 5-5 5"),
+    camera: svg(
+      "M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5zM12 16.25a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5"
+    )
+  };
+
+  // Label plus an icon; island=true nests the icon in its own circle (primary actions).
+  const setContent = (node, text, icon, island = false) => {
+    node.innerHTML = island ? `<span></span><span class="fuo-island">${ICONS[icon]}</span>` : `${ICONS[icon]}<span></span>`;
+    node.querySelector("span").textContent = text;
+    return node;
+  };
+
   // In-panel replacement for alert()/confirm(). Resolves true on confirm.
   const showModal = ({ title, body, confirmText = "Đã hiểu", cancelText }) =>
     new Promise((resolve) => {
       const overlay = el("div", "fuo-modal");
       const card = el("div", "fuo-modal__card");
+      const core = el("div", "fuo-modal__core");
       card.setAttribute("role", "dialog");
       card.setAttribute("aria-modal", "true");
       const heading = el("div", "fuo-modal__title", title);
@@ -89,7 +108,8 @@
       ok.addEventListener("click", () => close(true));
       overlay.addEventListener("click", (e) => e.target === overlay && close(false));
       actions.append(ok);
-      card.append(heading, text, actions);
+      core.append(heading, text, actions);
+      card.append(core);
       overlay.append(card);
       window.addEventListener("keydown", onKey, true);
       (document.querySelector(".fancybox__container") || document.body).append(overlay);
@@ -288,7 +308,8 @@
     const toggle = el("button", "fuo-jump__toggle");
     toggle.type = "button";
     const label = el("span", "fuo-jump__label");
-    const caret = el("span", "fuo-jump__caret", "▾");
+    const caret = el("span", "fuo-jump__caret");
+    caret.innerHTML = ICONS.caret;
     toggle.append(label, caret);
 
     const flagBtn = el("button", "fuo-jump__flag");
@@ -299,22 +320,20 @@
     // Toast status notice placed directly in wrap (always visible even when body is hidden)
     let toastTimer = null;
     const toast = el("div", "fuo-jump__toast");
-    toast.hidden = true;
+    toast.setAttribute("role", "status");
 
-    const showToast = (text, duration = 4000) => {
+    const showToast = (text, duration = 4000, kind = "ok") => {
       clearTimeout(toastTimer);
       toast.textContent = text;
-      toast.hidden = false;
-      toastTimer = setTimeout(() => {
-        toast.hidden = true;
-      }, duration);
+      toast.className = `fuo-jump__toast is-${kind} is-show`;
+      toastTimer = setTimeout(() => toast.classList.remove("is-show"), duration);
     };
 
     const body = el("div", "fuo-jump__body");
     body.hidden = true;
 
     const summary = el("div", "fuo-jump__summary");
-    const nextFlag = el("button", "fuo-jump__next", "Câu cờ tiếp theo →");
+    const nextFlag = setContent(el("button", "fuo-jump__next"), "Câu cờ tiếp theo", "arrow");
     nextFlag.type = "button";
     const top = el("div", "fuo-jump__top");
     top.append(summary, nextFlag);
@@ -323,7 +342,7 @@
     const lastStudied = state.current;
     const offerResume = lastStudied && lastStudied > 1 && lastStudied <= total && current === 0;
     if (offerResume) {
-      const resumeBtn = el("button", "fuo-jump__resume", `Tiếp tục câu ${lastStudied} →`);
+      const resumeBtn = setContent(el("button", "fuo-jump__resume"), `Tiếp tục câu ${lastStudied}`, "arrow", true);
       resumeBtn.type = "button";
       resumeBtn.title = `Nhảy tới câu ${lastStudied} đang học trước đó`;
       resumeBtn.addEventListener("click", () => {
@@ -340,7 +359,7 @@
     capTitle.append(capTitleText, capTag);
 
     const capRow = el("div", "fuo-jump__actions fuo-jump__actions--capture");
-    const capAll = el("button", "is-primary", `Chụp tất cả (${total})`);
+    const capAll = setContent(el("button", "is-primary"), `Chụp tất cả (${total})`, "camera", true);
     capAll.type = "button";
     capAll.title = "Chụp toàn bộ câu hỏi kèm khung chat thảo luận đáp án, nén thành file ZIP";
 
@@ -386,6 +405,8 @@
     for (let i = 0; i < total; i++) {
       const b = el("button", "", String(i + 1));
       b.type = "button";
+      // Stagger the reveal; capped so the whole grid lands within ~300ms.
+      b.style.setProperty("--fuo-delay", `${Math.min(i, 16) * 5}ms`);
       b.addEventListener("click", () => {
         fancybox.jumpTo(i);
       });
@@ -398,7 +419,9 @@
       '<span><i class="is-current"></i>Đang xem</span><span><i class="is-flagged"></i>Chưa chắc</span>';
 
     body.append(top, capTitle, capRow, speedRow, grid, legend);
-    wrap.append(bar, toast, body);
+    const core = el("div", "fuo-jump__core");
+    core.append(bar, toast, body);
+    wrap.append(core);
 
     // The sidebar body is re-rendered on every slide change, so mount on the
     // sidebar shell itself (above the poster info) when it exists.
@@ -415,14 +438,15 @@
 
     const renderFlags = () => {
       buttons.forEach((b, i) => b.classList.toggle("is-flagged", flags.has(i)));
-      summary.textContent = flags.size ? `⚑ ${flags.size} câu chưa chắc` : "Chưa gắn cờ câu nào";
+      summary.textContent = flags.size ? `${flags.size} câu chưa chắc` : "Chưa gắn cờ câu nào";
+      summary.classList.toggle("has-flags", flags.size > 0);
       nextFlag.disabled = flags.size === 0;
       if (!isBusy) {
         setButtonsDisabled(false);
       }
       const on = flags.has(current);
       flagBtn.classList.toggle("is-on", on);
-      flagBtn.textContent = on ? "⚑ Bỏ cờ" : "⚐ Gắn cờ";
+      setContent(flagBtn, on ? "Bỏ cờ" : "Gắn cờ", "flag");
     };
 
     // --- SCREENSHOT BATCH CAPTURE LOGIC ---
@@ -499,9 +523,9 @@
           ? zipName.replace(".zip", "-tam-dung.zip")
           : zipName;
         saveBlob(makeZip(capturedFiles), finalZipName);
-        showToast(`✓ Đã lưu ${capturedFiles.length} ảnh vào file ${finalZipName}!`, 5000);
+        showToast(`Đã lưu ${capturedFiles.length} ảnh vào file ${finalZipName}!`, 5000);
       } else if (!abortCapture) {
-        showToast("Không chụp được ảnh nào. Vui lòng F5 thử lại!", 5000);
+        showToast("Không chụp được ảnh nào. Vui lòng F5 thử lại!", 5000, "warn");
       }
 
       // Re-open body panel
@@ -527,7 +551,7 @@
         const bytes = dataUrlToBytes(dataUrl);
         const blob = new Blob([bytes], { type: "image/png" });
         saveBlob(blob, `${siteId}-${threadKey()}-Cau-${String(cur + 1).padStart(2, "0")}.png`);
-        showToast(`✓ Đã chụp câu ${cur + 1} kèm khung chat!`, 4000);
+        showToast(`Đã chụp câu ${cur + 1} kèm khung chat!`, 4000);
       } catch (err) {
         console.error("Lỗi chụp đơn:", err);
         reportCaptureError(err);
@@ -564,7 +588,7 @@
         toggleFlag(flags, i);
         renderFlags();
         if (isInvalidated(err)) askReload();
-        else showToast(`Không lưu được cờ: ${err.message}`, 5000);
+        else showToast(`Không lưu được cờ: ${err.message}`, 5000, "warn");
       }
     });
 
