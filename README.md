@@ -35,6 +35,9 @@ Extension trình duyệt (Manifest V3) cho hai diễn đàn [FuOverflow](https:/
 Khi mở ảnh đề, cột bên phải có panel điều khiển:
 
 - **"Câu x/N"**: mở bảng số để nhảy thẳng tới câu bất kỳ.
+- **Che đáp án** (nút con mắt gạch): thêm vùng che kính mờ nổi trên ảnh đề, kéo để di chuyển, kéo góc
+  để đổi cỡ, giữ nút con mắt để xem nhanh, `×` để bỏ. Vùng che được nhớ theo từng đề trên máy này,
+  giữ nguyên khi chuyển câu và tự ẩn khi chụp màn hình.
 - **"Gắn cờ"**: đánh dấu câu đang xem là chưa chắc. Khi đã có cờ sẽ hiện thêm **"Câu cờ tiếp theo"**.
 - **Chụp câu này**: chụp câu đang xem kèm khung chat, tải về 1 file PNG.
 - **Chụp nhiều**: chọn
