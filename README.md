@@ -58,6 +58,9 @@ Bấm icon extension để xem số đề đã ôn / đang học / câu gắn c�
 - **Xuất dữ liệu**: tải về `fu-exam-checklist-YYYY-MM-DD.json`.
 - **Nhập dữ liệu**: chọn file đã xuất ở máy khác. Dữ liệu được **gộp** (bản mới hơn được giữ, không xoá
   gì), có bước xác nhận cho biết bao nhiêu đề được thêm / cập nhật. File sai định dạng bị từ chối.
+- **Công tắc dọn trang** (mặc định tắt): "Ẩn banner Donate" ở thẻ FuExam (banner nổi dưới đáy màn
+  hình) và "Ẩn popup cộng đồng" ở thẻ FuOverflow (hộp "Tham gia cộng đồng FuOverflow", được tự đóng
+  bằng nút đóng của chính trang). Bật/tắt có tác dụng ngay, không cần F5.
 - **Chrome**: nếu đăng nhập Chrome và bật Sync, dữ liệu tự đồng bộ giữa các máy.
   **Brave**: không đồng bộ được, dùng Xuất/Nhập file.
 

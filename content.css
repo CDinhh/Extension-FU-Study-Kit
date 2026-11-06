@@ -322,3 +322,9 @@
     animation: none;
   }
 }
+
+/* Popup switches: hide the forum's own promos (off by default). */
+html.fuo-hide-donate [id^="footerbanner"],
+html.fuo-hide-community #fuoFbVerifyOverlay {
+  display: none !important;
+}

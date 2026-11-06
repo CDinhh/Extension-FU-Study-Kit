@@ -30,7 +30,8 @@ Dữ liệu nằm trong `chrome.storage` của trình duyệt:
   liệu này giữa các máy của bạn qua tài khoản Google của bạn. Việc đồng bộ do Chrome thực hiện, extension
   không nhận được bản sao nào. Trong Brave, phần này chỉ nằm trên máy.
 
-Tốc độ chụp màn hình bạn chọn được lưu trong `localStorage` của trang diễn đàn.
+Tốc độ chụp màn hình và vị trí các vùng che đáp án được lưu trong `localStorage` của trang diễn đàn.
+Các công tắc ẩn banner/popup của diễn đàn được lưu trong `chrome.storage.local`.
 
 **Xuất/Nhập dữ liệu:** file JSON bạn xuất ra được lưu vào máy của bạn và chỉ được đọc khi bạn chủ
 động chọn nó để nhập. Extension không gửi file đó đi đâu.
@@ -81,7 +82,8 @@ It lives in the browser's `chrome.storage`:
   data between your own devices through your Google account. Chrome does the syncing; the
   extension never receives a copy. In Brave this stays on the device.
 
-The capture speed you pick is kept in the forum page's `localStorage`.
+The capture speed and the answer-cover positions are kept in the forum page's `localStorage`.
+The switches that hide the forums' banner/popup are kept in `chrome.storage.local`.
 
 **Export/Import:** the JSON file you export is saved on your device and is read only when you
 choose it for import. The extension never uploads it.

@@ -216,9 +216,42 @@
     renderBadge(titleEl, id, false);
   };
 
+  // --- Optional page clean-up, switched from the popup (chrome.storage.local "prefs") ---
+  // hideDonate: FuExam's floating donate banner. hideCommunity: FuOverflow's "join the community" popup.
+  let hideCommunity = false;
+  let watchedOverlay = null;
+
+  // That popup locks the page while open, so let the site's own close button run its cleanup.
+  const closeCommunity = () => {
+    const overlay = document.getElementById("fuoFbVerifyOverlay");
+    if (hideCommunity && overlay?.classList.contains("fuo-fbv--show")) document.getElementById("fuoFbvClose")?.click();
+  };
+
+  // The overlay sits in the DOM from the start and is shown later by class/style changes.
+  const watchCommunity = () => {
+    const overlay = document.getElementById("fuoFbVerifyOverlay");
+    if (!overlay || overlay === watchedOverlay) return;
+    watchedOverlay = overlay;
+    new MutationObserver(closeCommunity).observe(overlay, { attributes: true, attributeFilter: ["class", "style"] });
+    closeCommunity();
+  };
+
+  const applyPrefs = (prefs = {}) => {
+    document.documentElement.classList.toggle("fuo-hide-donate", !!prefs.hideDonate);
+    document.documentElement.classList.toggle("fuo-hide-community", !!prefs.hideCommunity);
+    hideCommunity = !!prefs.hideCommunity;
+    closeCommunity();
+  };
+
+  chrome.storage.local.get("prefs").then((r) => applyPrefs(r.prefs), () => {});
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.prefs) applyPrefs(changes.prefs.newValue);
+  });
+
   const decorate = () => {
     decorateThreadList();
     decorateThreadPage();
+    watchCommunity();
   };
 
   // --- Bridge for lightbox.js (MAIN world cannot call chrome.*) ---

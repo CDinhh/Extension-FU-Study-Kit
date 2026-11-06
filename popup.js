@@ -19,7 +19,31 @@
     msgTimer = setTimeout(() => (msg.hidden = true), 6000);
   };
 
+  // One clean-up switch per forum; content.js applies it live.
+  const SWITCHES = {
+    fuexam: ["hideDonate", "Ẩn banner Donate"],
+    fuoverflow: ["hideCommunity", "Ẩn popup cộng đồng"]
+  };
+  let prefs = {};
+
+  const siteSwitch = (id) => {
+    if (!SWITCHES[id]) return null;
+    const [key, text] = SWITCHES[id];
+    const label = el("label", "pp-switch");
+    const box = el("input");
+    box.type = "checkbox";
+    box.setAttribute("role", "switch");
+    box.checked = !!prefs[key];
+    box.addEventListener("change", async () => {
+      prefs = { ...prefs, [key]: box.checked };
+      await chrome.storage.local.set({ prefs });
+    });
+    label.append(el("span", "pp-switch__text", text), box);
+    return label;
+  };
+
   const renderSites = async () => {
+    prefs = (await chrome.storage.local.get("prefs")).prefs || {};
     const sites = await FuoStorage.loadAllSites();
     const wrap = $("sites");
     wrap.replaceChildren();
@@ -29,7 +53,7 @@
       card.style.setProperty("--i", i);
       const core = el("div", "pp-card__core");
       const head = el("div", "pp-site__head");
-      head.append(el("span", "pp-site__name", meta.name), el("span", "pp-site__host", meta.host));
+      head.append(el("span", "pp-site__name", meta.name), siteSwitch(id) || el("span", "pp-site__host", meta.host));
       const stats = el("dl", "pp-stats");
       for (const [cls, label, n] of [
         ["is-done", "Đã ôn", counts.done],
