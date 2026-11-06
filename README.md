@@ -35,12 +35,15 @@ Extension trình duyệt (Manifest V3) cho hai diễn đàn [FuOverflow](https:/
 Khi mở ảnh đề, cột bên phải có panel điều khiển:
 
 - **"Câu x/N"**: mở bảng số để nhảy thẳng tới câu bất kỳ.
-- **"Gắn cờ"**: đánh dấu câu đang xem là chưa chắc; **"Câu cờ tiếp theo"** nhảy qua các câu có cờ.
-- **Chụp tất cả (N)**: tự lướt từng câu, chụp cả ảnh câu hỏi lẫn khung chat thảo luận, nén thành ZIP
-  (`fuexam-<id>-kem-chat-tat-ca.zip` hoặc `fuoverflow-...`).
-- **Chụp câu cờ** / **Chụp câu này**: chỉ chụp các câu có cờ, hoặc câu đang xem (1 file PNG).
-- Chọn tốc độ mỗi câu (0.5s – 1.5s) để ảnh và bình luận kịp tải; có nút **Dừng** bất kỳ lúc nào,
-  tự tạm dừng khi bạn chuyển sang tab khác.
+- **"Gắn cờ"**: đánh dấu câu đang xem là chưa chắc. Khi đã có cờ sẽ hiện thêm **"Câu cờ tiếp theo"**.
+- **Chụp câu này**: chụp câu đang xem kèm khung chat, tải về 1 file PNG.
+- **Chụp nhiều**: chọn
+  - **Câu**: Tất cả hoặc chỉ các câu có cờ;
+  - **Nội dung**: Kèm đáp án (ảnh câu hỏi + khung chat thảo luận) hoặc Chỉ đề (chỉ ảnh đề);
+  - **Tốc độ** mỗi câu (0.5s – 1.5s) để ảnh và bình luận kịp tải;
+
+  rồi bấm **Bắt đầu chụp**. Kết quả nén thành ZIP, ví dụ `fuexam-<id>-kem-chat-tat-ca.zip` hoặc
+  `fuoverflow-<id>-chi-de-cau-co.zip`. Có nút **Dừng** bất kỳ lúc nào, tự tạm dừng khi bạn chuyển tab.
 
 **Lần đầu chụp** trình duyệt cần quyền chụp tab: bấm icon extension trên thanh công cụ →
 **"Cho phép"**. Extension chỉ chụp khi bạn bấm nút chụp.

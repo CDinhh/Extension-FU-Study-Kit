@@ -3,6 +3,7 @@
 (() => {
   const PANEL_CLASS = "fuo-jump";
   const SPEED_KEY = "fuo-capture-speed";
+  const ANSWERS_KEY = "fuo-capture-answers";
   const EXT_NAME = "Exam Checklist for FuOverflow & FuExam";
 
   // keep in sync with lib/store-core.js siteFromHost (this MAIN-world script cannot load lib/)
@@ -181,6 +182,34 @@
     return bytes;
   };
 
+  // "Chỉ đề": keep only the exam image of the current slide (no comment sidebar, toolbar or
+  // page behind it); falls back to everything left of the sidebar.
+  // createImageBitmap on a Blob avoids the page's CSP rules for data: images.
+  const cropToQuestion = async (bytes, container) => {
+    const img = container.querySelector(".fancybox__slide.is-selected img, .fancybox-slide--current img");
+    const sidebar = container.querySelector(".fancybox-sidebar");
+    let r = img?.getBoundingClientRect();
+    if (!r || r.width < 50 || r.height < 50) {
+      const cut = sidebar?.getBoundingClientRect().left;
+      if (!cut || cut <= 0) return bytes;
+      r = { left: 0, top: 0, width: cut, height: window.innerHeight };
+    }
+    const left = Math.max(0, r.left);
+    const top = Math.max(0, r.top);
+    const width = Math.min(window.innerWidth, r.left + r.width) - left;
+    const height = Math.min(window.innerHeight, r.top + r.height) - top;
+    const bmp = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+    const scale = bmp.width / window.innerWidth;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    canvas
+      .getContext("2d")
+      .drawImage(bmp, left * scale, top * scale, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
+    return new Uint8Array(await blob.arrayBuffer());
+  };
+
   // Minimal store-only (no compression) ZIP writer: images are already compressed,
   // and this avoids bundling a library into the extension.
   const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
@@ -332,6 +361,7 @@
     const body = el("div", "fuo-jump__body");
     body.hidden = true;
 
+    // Flag summary row only appears once something is flagged.
     const summary = el("div", "fuo-jump__summary");
     const nextFlag = setContent(el("button", "fuo-jump__next"), "Câu cờ tiếp theo", "arrow");
     nextFlag.type = "button";
@@ -341,47 +371,74 @@
     // If opened at slide 0 but previously studied further, offer quick resume
     const lastStudied = state.current;
     const offerResume = lastStudied && lastStudied > 1 && lastStudied <= total && current === 0;
-    if (offerResume) {
-      const resumeBtn = setContent(el("button", "fuo-jump__resume"), `Tiếp tục câu ${lastStudied}`, "arrow", true);
-      resumeBtn.type = "button";
-      resumeBtn.title = `Nhảy tới câu ${lastStudied} đang học trước đó`;
-      resumeBtn.addEventListener("click", () => {
-        fancybox.jumpTo(lastStudied - 1);
-        resumeBtn.remove();
-      });
-      top.append(resumeBtn);
-    }
+    const resumeBtn = setContent(el("button", "fuo-jump__resume"), `Tiếp tục câu ${lastStudied}`, "arrow", true);
+    resumeBtn.type = "button";
+    resumeBtn.title = `Nhảy tới câu ${lastStudied} đang học trước đó`;
+    resumeBtn.hidden = !offerResume;
+    resumeBtn.addEventListener("click", () => {
+      fancybox.jumpTo(lastStudied - 1);
+      resumeBtn.hidden = true;
+    });
 
-    // --- SCREENSHOT CAPTURE SECTION (Recommended: captures both question & chat sidebar) ---
-    const capTitle = el("div", "fuo-jump__section-title");
-    const capTitleText = el("span", "", "Chụp màn hình (+ khung chat)");
-    const capTag = el("span", "fuo-jump__tag", "Khuyên dùng");
-    capTitle.append(capTitleText, capTag);
+    // --- SCREENSHOT CAPTURE: one question now, or several with options ---
+    const capTitle = el("div", "fuo-jump__section-title", "Chụp màn hình");
 
-    const capRow = el("div", "fuo-jump__actions fuo-jump__actions--capture");
-    const capAll = setContent(el("button", "is-primary"), `Chụp tất cả (${total})`, "camera", true);
-    capAll.type = "button";
-    capAll.title = "Chụp toàn bộ câu hỏi kèm khung chat thảo luận đáp án, nén thành file ZIP";
-
-    const capFlagged = el("button", "", "Chụp câu cờ");
-    capFlagged.type = "button";
-    capFlagged.title = "Chụp các câu đã đánh dấu cờ kèm khung chat";
-
-    const capCurrent = el("button", "", "Chụp câu này");
+    const capRow = el("div", "fuo-jump__actions");
+    const capCurrent = setContent(el("button", "is-primary"), "Chụp câu này", "camera", true);
     capCurrent.type = "button";
-    capCurrent.title = "Chụp câu đang xem kèm khung chat tải về 1 ảnh PNG";
+    capCurrent.title = "Chụp câu đang xem kèm khung chat, tải về 1 ảnh PNG";
+    const capMulti = setContent(el("button", "fuo-jump__multi"), "Chụp nhiều", "caret");
+    capMulti.type = "button";
+    capMulti.setAttribute("aria-expanded", "false");
+    capRow.append(capCurrent, capMulti);
 
-    capRow.append(capAll, capFlagged, capCurrent);
+    // Segmented choice; returns the wrapper and a getter for the picked value.
+    const segmented = (name, options, initial, onChange) => {
+      const wrapEl = el("div", "fuo-seg");
+      wrapEl.setAttribute("role", "radiogroup");
+      wrapEl.setAttribute("aria-label", name);
+      let value = initial;
+      const btns = options.map(([val, text]) => {
+        const b = el("button", "", text);
+        b.type = "button";
+        b.setAttribute("role", "radio");
+        b.addEventListener("click", () => {
+          value = val;
+          paint();
+          onChange?.(val);
+        });
+        wrapEl.append(b);
+        return [val, b];
+      });
+      const paint = () => btns.forEach(([val, b]) => b.setAttribute("aria-checked", String(val === value)));
+      paint();
+      return { el: wrapEl, get: () => value, set: (v) => ((value = v), paint()), btn: (v) => btns.find(([x]) => x === v)[1] };
+    };
 
-    // Capture speed delay selector
-    const speedRow = el("div", "fuo-jump__speed-row");
-    const speedLabel = el("label", "", "Tốc độ chụp mỗi câu:");
+    const sheet = el("div", "fuo-jump__sheet");
+    sheet.hidden = true;
+    const field = (labelText, control) => {
+      const row = el("div", "fuo-jump__field");
+      row.append(el("span", "fuo-jump__field-label", labelText), control);
+      return row;
+    };
+
+    const scope = segmented("Câu cần chụp", [["all", `Tất cả (${total})`], ["flags", "Câu cờ"]], "all", () => renderFlags());
+    let withAnswers = localStorage.getItem(ANSWERS_KEY) !== "0";
+    const content = segmented("Nội dung", [[true, "Kèm đáp án"], [false, "Chỉ đề"]], withAnswers, (v) => {
+      withAnswers = v;
+      try {
+        localStorage.setItem(ANSWERS_KEY, v ? "1" : "0");
+      } catch {}
+    });
+
     const speedSelect = el("select", "fuo-jump__speed-select");
+    speedSelect.setAttribute("aria-label", "Tốc độ chụp mỗi câu");
     const speedOptions = [
-      { val: 500, text: "Tối đa (0.5s - sát giới hạn Chrome)" },
-      { val: 700, text: "Nhanh (0.7s)" },
-      { val: 1000, text: "Chuẩn (1.0s)" },
-      { val: 1500, text: "Kỹ (1.5s - mạng chậm)" }
+      { val: 500, text: "Tối đa · 0.5s mỗi câu" },
+      { val: 700, text: "Nhanh · 0.7s mỗi câu" },
+      { val: 1000, text: "Chuẩn · 1s mỗi câu" },
+      { val: 1500, text: "Kỹ · 1.5s (mạng chậm)" }
     ];
     let savedSpeed = Number(localStorage.getItem(SPEED_KEY)) || 1000;
     speedOptions.forEach((opt) => {
@@ -397,7 +454,16 @@
         localStorage.setItem(SPEED_KEY, String(savedSpeed));
       } catch {}
     });
-    speedRow.append(speedLabel, speedSelect);
+
+    const startBtn = setContent(el("button", "fuo-jump__start is-primary"), "Bắt đầu chụp", "camera", true);
+    startBtn.type = "button";
+    sheet.append(field("Câu", scope.el), field("Nội dung", content.el), field("Tốc độ", speedSelect), startBtn);
+
+    capMulti.addEventListener("click", () => {
+      sheet.hidden = !sheet.hidden;
+      capMulti.classList.toggle("is-open", !sheet.hidden);
+      capMulti.setAttribute("aria-expanded", String(!sheet.hidden));
+    });
 
     // --- BUTTONS GRID ---
     const grid = el("div", "fuo-jump__grid");
@@ -418,7 +484,7 @@
     legend.innerHTML =
       '<span><i class="is-current"></i>Đang xem</span><span><i class="is-flagged"></i>Chưa chắc</span>';
 
-    body.append(top, capTitle, capRow, speedRow, grid, legend);
+    body.append(top, resumeBtn, capTitle, capRow, sheet, grid, legend);
     const core = el("div", "fuo-jump__core");
     core.append(bar, toast, body);
     wrap.append(core);
@@ -430,17 +496,23 @@
     let isBusy = false;
     let abortCapture = false;
 
+    const captureIndexes = () =>
+      scope.get() === "flags" ? [...flags].sort((a, b) => a - b) : [...Array(total).keys()];
+
     const setButtonsDisabled = (disabled) => {
-      capAll.disabled = disabled;
-      capFlagged.disabled = disabled || flags.size === 0;
       capCurrent.disabled = disabled;
+      capMulti.disabled = disabled;
+      startBtn.disabled = disabled || captureIndexes().length === 0;
     };
 
     const renderFlags = () => {
       buttons.forEach((b, i) => b.classList.toggle("is-flagged", flags.has(i)));
-      summary.textContent = flags.size ? `${flags.size} câu chưa chắc` : "Chưa gắn cờ câu nào";
-      summary.classList.toggle("has-flags", flags.size > 0);
-      nextFlag.disabled = flags.size === 0;
+      top.hidden = flags.size === 0;
+      summary.textContent = `${flags.size} câu chưa chắc`;
+      scope.btn("flags").textContent = `Câu cờ (${flags.size})`;
+      scope.btn("flags").disabled = flags.size === 0;
+      if (!flags.size && scope.get() === "flags") scope.set("all");
+      startBtn.querySelector("span").textContent = `Bắt đầu chụp ${captureIndexes().length} câu`;
       if (!isBusy) {
         setButtonsDisabled(false);
       }
@@ -450,7 +522,7 @@
     };
 
     // --- SCREENSHOT BATCH CAPTURE LOGIC ---
-    const runScreenshotCapture = async (indexes, zipName) => {
+    const runScreenshotCapture = async (indexes, zipName, answers) => {
       if (isBusy || !indexes.length) return;
       isBusy = true;
       abortCapture = false;
@@ -494,7 +566,7 @@
 
         try {
           const dataUrl = await requestTabCapture();
-          const bytes = dataUrlToBytes(dataUrl);
+          const bytes = answers ? dataUrlToBytes(dataUrl) : await cropToQuestion(dataUrlToBytes(dataUrl), container);
           const name = `Cau-${String(slideIdx + 1).padStart(2, "0")}.png`;
           capturedFiles.push({ name, data: bytes });
         } catch (err) {
@@ -564,12 +636,11 @@
     };
 
     // Event listeners for screenshot capture
-    capAll.addEventListener("click", () =>
-      runScreenshotCapture([...Array(total).keys()], `${siteId}-${threadKey()}-kem-chat-tat-ca.zip`)
-    );
-    capFlagged.addEventListener("click", () =>
-      runScreenshotCapture([...flags].sort((a, b) => a - b), `${siteId}-${threadKey()}-kem-chat-cau-co.zip`)
-    );
+    startBtn.addEventListener("click", () => {
+      const kind = withAnswers ? "kem-chat" : "chi-de";
+      const which = scope.get() === "flags" ? "cau-co" : "tat-ca";
+      runScreenshotCapture(captureIndexes(), `${siteId}-${threadKey()}-${kind}-${which}.zip`, withAnswers);
+    });
     capCurrent.addEventListener("click", runCaptureCurrent);
 
     toggle.addEventListener("click", () => {

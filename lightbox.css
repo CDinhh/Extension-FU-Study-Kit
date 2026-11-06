@@ -12,8 +12,8 @@
   --fuo-hair-strong: rgba(255, 255, 255, 0.14);
   --fuo-text: #ededed;
   --fuo-muted: rgba(237, 237, 237, 0.55);
-  --fuo-done: #34d399;
-  --fuo-study: #60a5fa;
+  --fuo-accent: #60a5fa;
+  --fuo-accent-rgb: 96, 165, 250;
   --fuo-flag: #fbbf24;
   --fuo-danger: #f87171;
   --fuo-ease: cubic-bezier(0.32, 0.72, 0, 1);
@@ -107,7 +107,7 @@
 
 .fuo-jump button:focus-visible,
 .fuo-modal button:focus-visible {
-  outline: 2px solid rgba(52, 211, 153, 0.6);
+  outline: 2px solid rgba(var(--fuo-accent-rgb), 0.6);
   outline-offset: 2px;
 }
 
@@ -164,11 +164,11 @@
   left: 10px;
   z-index: 3;
   padding: 9px 14px;
-  border: 1px solid rgba(52, 211, 153, 0.3);
+  border: 1px solid rgba(var(--fuo-accent-rgb), 0.3);
   border-radius: 14px;
-  background: rgba(6, 30, 22, 0.82);
+  background: rgba(8, 20, 40, 0.84);
   backdrop-filter: blur(12px);
-  color: #a7f3d0;
+  color: #bfdbfe;
   font-size: 12px;
   font-weight: 500;
   text-align: center;
@@ -207,8 +207,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   font-size: 13px;
+}
+
+/* Hidden-by-attribute must beat the display rules above. */
+.fuo-jump [hidden] {
+  display: none !important;
 }
 
 .fuo-jump__summary {
@@ -216,15 +221,11 @@
   align-items: center;
   gap: 6px;
   padding-left: 2px;
-  color: var(--fuo-muted);
-}
-
-.fuo-jump__summary.has-flags {
   color: var(--fuo-flag);
   font-weight: 500;
 }
 
-.fuo-jump__summary.has-flags::before {
+.fuo-jump__summary::before {
   content: "";
   width: 6px;
   height: 6px;
@@ -264,22 +265,22 @@
 
 /* Island button: label + icon nested in its own circle. */
 .fuo-jump__resume,
-.fuo-jump__actions--capture button.is-primary {
+.fuo-jump button.is-primary {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 4px 4px 4px 14px;
-  border: 1px solid rgba(52, 211, 153, 0.38);
+  border: 1px solid rgba(var(--fuo-accent-rgb), 0.38);
   border-radius: 999px;
-  background: rgba(52, 211, 153, 0.12);
-  color: #d1fae5;
+  background: rgba(var(--fuo-accent-rgb), 0.12);
+  color: #dbeafe;
   font-weight: 500;
 }
 
 .fuo-jump__resume {
   width: 100%;
-  margin-top: 6px;
+  margin-bottom: 4px;
   font-size: 13px;
   animation: fuo-rise 500ms var(--fuo-ease) both;
 }
@@ -290,15 +291,15 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(52, 211, 153, 0.22);
-  color: var(--fuo-done);
+  background: rgba(var(--fuo-accent-rgb), 0.22);
+  color: var(--fuo-accent);
   transition: transform 500ms var(--fuo-ease);
 }
 
 .fuo-jump__resume:hover,
-.fuo-jump__actions--capture button.is-primary:hover:not(:disabled) {
-  border-color: rgba(52, 211, 153, 0.6);
-  background: rgba(52, 211, 153, 0.18);
+.fuo-jump button.is-primary:hover:not(:disabled) {
+  border-color: rgba(var(--fuo-accent-rgb), 0.6);
+  background: rgba(var(--fuo-accent-rgb), 0.18);
 }
 
 .fuo-jump button:hover:not(:disabled) .fuo-island {
@@ -316,16 +317,6 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   white-space: nowrap;
-}
-
-.fuo-jump__tag {
-  padding: 2px 8px;
-  border: 1px solid rgba(52, 211, 153, 0.3);
-  border-radius: 999px;
-  color: var(--fuo-done);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-transform: none;
 }
 
 .fuo-jump__actions {
@@ -350,13 +341,100 @@
     border-color 400ms var(--fuo-ease);
 }
 
-/* Primary capture gets its own row; the two secondary ones share the next. */
-.fuo-jump__actions--capture {
-  flex-wrap: wrap;
+.fuo-jump__multi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.fuo-jump__actions--capture button.is-primary {
-  flex: 1 1 100%;
+.fuo-jump__multi .fuo-ico {
+  order: 1;
+  width: 14px;
+  height: 14px;
+  transition: transform 500ms var(--fuo-ease);
+}
+
+.fuo-jump__multi.is-open {
+  border-color: rgba(var(--fuo-accent-rgb), 0.45);
+  color: #dbeafe;
+}
+
+.fuo-jump__multi.is-open .fuo-ico {
+  transform: rotate(180deg);
+}
+
+/* "Chụp nhiều" options sheet */
+.fuo-jump__sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid var(--fuo-hair);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.025);
+  animation: fuo-rise 420ms var(--fuo-ease) both;
+}
+
+.fuo-jump__field {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.fuo-jump__field-label {
+  color: var(--fuo-muted);
+  font-size: 12px;
+}
+
+.fuo-seg {
+  display: flex;
+  padding: 3px;
+  border: 1px solid var(--fuo-hair);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.fuo-seg button {
+  flex: 1;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fuo-muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 400ms var(--fuo-ease),
+    color 400ms var(--fuo-ease),
+    transform 400ms var(--fuo-ease);
+}
+
+.fuo-seg button[aria-checked="true"] {
+  background: rgba(var(--fuo-accent-rgb), 0.18);
+  color: #dbeafe;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.fuo-seg button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.fuo-jump__start {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.fuo-jump__start:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .fuo-jump__actions button:hover:not(:disabled) {
@@ -368,22 +446,9 @@
   cursor: default;
 }
 
-.fuo-jump__speed-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 0 2px 10px;
-  color: var(--fuo-muted);
-  font-size: 12px;
-}
-
-.fuo-jump__speed-row label {
-  white-space: nowrap;
-}
-
 .fuo-jump__speed-select {
   min-width: 0;
+  width: 100%;
   height: 30px;
   padding: 0 10px;
   border: 1px solid var(--fuo-hair-strong);
@@ -396,7 +461,7 @@
 }
 
 .fuo-jump__speed-select:focus-visible {
-  outline: 2px solid rgba(52, 211, 153, 0.6);
+  outline: 2px solid rgba(var(--fuo-accent-rgb), 0.6);
   outline-offset: 2px;
 }
 
@@ -450,8 +515,8 @@
 
 .fuo-jump__grid button.is-current {
   border-color: transparent;
-  background: var(--fuo-done);
-  color: #04130c;
+  background: var(--fuo-accent);
+  color: #06122a;
   font-weight: 700;
 }
 
@@ -473,7 +538,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--fuo-done);
+  background: var(--fuo-accent);
 }
 
 .fuo-jump__legend i.is-flagged {
@@ -558,13 +623,13 @@
 }
 
 .fuo-modal__actions button.is-primary {
-  border-color: rgba(52, 211, 153, 0.4);
-  background: rgba(52, 211, 153, 0.14);
-  color: #d1fae5;
+  border-color: rgba(var(--fuo-accent-rgb), 0.4);
+  background: rgba(var(--fuo-accent-rgb), 0.14);
+  color: #dbeafe;
 }
 
 .fuo-modal__actions button.is-primary:hover {
-  background: rgba(52, 211, 153, 0.22);
+  background: rgba(var(--fuo-accent-rgb), 0.22);
 }
 
 @keyframes fuo-rise {

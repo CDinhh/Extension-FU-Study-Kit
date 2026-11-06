@@ -46,8 +46,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(260px 200px at 12% -4%, rgba(52, 211, 153, 0.16), transparent 70%),
-    radial-gradient(240px 220px at 108% 38%, rgba(96, 165, 250, 0.12), transparent 70%);
+    radial-gradient(260px 200px at 12% -4%, rgba(96, 165, 250, 0.18), transparent 70%),
+    radial-gradient(240px 220px at 108% 38%, rgba(129, 140, 248, 0.12), transparent 70%);
 }
 
 .pp {
@@ -220,7 +220,7 @@ body::before {
 }
 
 .pp-btn:focus-visible {
-  outline: 2px solid rgba(52, 211, 153, 0.6);
+  outline: 2px solid rgba(96, 165, 250, 0.6);
   outline-offset: 2px;
 }
 
@@ -239,19 +239,19 @@ body::before {
 }
 
 .pp-btn--primary {
-  border-color: rgba(52, 211, 153, 0.35);
-  background: rgba(52, 211, 153, 0.12);
-  color: #d1fae5;
+  border-color: rgba(96, 165, 250, 0.35);
+  background: rgba(96, 165, 250, 0.12);
+  color: #dbeafe;
 }
 
 .pp-btn--primary:hover {
-  border-color: rgba(52, 211, 153, 0.55);
-  background: rgba(52, 211, 153, 0.18);
+  border-color: rgba(96, 165, 250, 0.55);
+  background: rgba(96, 165, 250, 0.18);
 }
 
 .pp-btn--primary .pp-btn__icon {
-  background: rgba(52, 211, 153, 0.22);
-  color: var(--done);
+  background: rgba(96, 165, 250, 0.22);
+  color: var(--study);
 }
 
 .pp-btn--ghost {
@@ -290,8 +290,8 @@ svg {
 }
 
 .pp-msg.is-ok {
-  background: rgba(52, 211, 153, 0.1);
-  color: #a7f3d0;
+  background: rgba(96, 165, 250, 0.1);
+  color: #bfdbfe;
 }
 
 .pp-msg.is-err {
