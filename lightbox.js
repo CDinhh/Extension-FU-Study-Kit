@@ -107,6 +107,11 @@
   const reportCaptureError = (err) =>
     isInvalidated(err)
       ? askReload()
+      : err.needsPermission
+      ? showModal({
+          title: "Cần cấp quyền chụp màn hình",
+          body: `Trình duyệt chỉ cho extension chụp tab khi có quyền này.\n\nBấm icon extension "${EXT_NAME}" trên thanh công cụ → "Cho phép chụp màn hình", rồi bấm chụp lại.`
+        })
       : showModal({
           title: "Không thể chụp màn hình",
           body: `${err.message}\n\nHãy làm theo thứ tự:\n1. Mở brave://extensions (hoặc chrome://extensions)\n2. Bấm Reload extension "${EXT_NAME}"\n3. Quay lại tab ${siteName} và nhấn F5.`
@@ -126,8 +131,9 @@
           if (resp?.success && resp?.dataUrl) {
             resolve(resp.dataUrl);
           } else {
-            const errStr = resp?.error || "Không nhận được phản hồi từ extension";
-            reject(new Error(errStr));
+            const err = new Error(resp?.error || "Không nhận được phản hồi từ extension");
+            err.needsPermission = !!resp?.needsPermission;
+            reject(err);
           }
         }
       };

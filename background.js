@@ -27,8 +27,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const err = chrome.runtime.lastError;
       if (err || !dataUrl) {
         const errorMsg = err?.message || "Không thể chụp được nội dung tab";
-        console.error("FuOverflow captureVisibleTab error:", errorMsg);
-        sendResponse({ success: false, error: errorMsg });
+        console.error("captureVisibleTab error:", errorMsg);
+        // Site host permissions are not enough for captureVisibleTab; the user grants
+        // the optional <all_urls> from the popup.
+        chrome.permissions.contains({ origins: ["<all_urls>"] }, (granted) => {
+          sendResponse({ success: false, error: errorMsg, needsPermission: !granted });
+        });
       } else {
         sendResponse({ success: true, dataUrl });
       }
