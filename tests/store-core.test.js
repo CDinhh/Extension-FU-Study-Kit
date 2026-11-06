@@ -141,6 +141,18 @@ test("diffCounts counts added and updated entries", () => {
   assert.deepEqual(C.diffCounts(local, local).fuexam, { added: 0, updated: 0 });
 });
 
+test("diffCounts ignores key order (chrome.storage returns keys sorted)", () => {
+  const local = {
+    fuexam: site({ checklist: { 1: { at: 1, done: true } }, flags: { 1: { 2: { at: 3, on: true } } } })
+  };
+  const incoming = {
+    fuexam: site({ checklist: { 1: { done: true, at: 1 } }, flags: { 1: { 2: { on: true, at: 3 } } } })
+  };
+  assert.deepEqual(C.diffCounts(local, incoming).fuexam, { added: 0, updated: 0 });
+  assert.equal(C.sameData(local.fuexam, incoming.fuexam), true);
+  assert.equal(C.sameData(local.fuexam, site()), false);
+});
+
 test("sync items round-trip with every item under 7500 bytes", () => {
   const s = C.emptySite();
   for (let t = 0; t < 100; t++) {
