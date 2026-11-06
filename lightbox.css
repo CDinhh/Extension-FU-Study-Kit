@@ -318,3 +318,56 @@
 .fuo-jump__legend i.is-flagged {
   background: var(--fuo-flag);
 }
+
+.fuo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.fuo-modal__card {
+  width: min(420px, calc(100vw - 32px));
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: #1b1f24;
+  color: #e6edf3;
+}
+
+.fuo-modal__title {
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fuo-modal__body {
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.fuo-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.fuo-modal__actions button {
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.fuo-modal__actions button.is-primary {
+  border-color: rgba(63, 185, 80, 0.45);
+  background: rgba(63, 185, 80, 0.2);
+  color: #3fb950;
+}

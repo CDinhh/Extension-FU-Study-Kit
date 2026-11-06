@@ -2,9 +2,13 @@
 // Fancybox API is only reachable from there, not from an isolated content script.
 (() => {
   const PANEL_CLASS = "fuo-jump";
-  const FLAGS_KEY = "fuo-question-flags";
-  const PROGRESS_KEY = "fuo-study-progress";
   const SPEED_KEY = "fuo-capture-speed";
+  const EXT_NAME = "Exam Checklist for FuOverflow & FuExam";
+
+  // keep in sync with lib/store-core.js siteFromHost (this MAIN-world script cannot load lib/)
+  const host = location.hostname;
+  const siteId = host === "fuexam.me" || host.endsWith(".fuexam.me") ? "fuexam" : "fuoverflow";
+  const siteName = siteId === "fuexam" ? "FuExam" : "FuOverflow";
 
   // Flags and progress are stored per thread by thread numeric ID.
   const threadKey = () => {
@@ -15,54 +19,32 @@
     return clean || "exam";
   };
 
-  const loadProgress = () => {
-    try {
-      return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || {};
-    } catch {
-      return {};
-    }
-  };
-
-  const saveStudyProgress = (id, current, total) => {
-    if (!id) return;
-    try {
-      const all = JSON.parse(localStorage.getItem(PROGRESS_KEY)) || {};
-      all[id] = {
-        ...(all[id] || {}),
-        current: Number(current),
-        total: Number(total),
-        updatedAt: Date.now()
+  // Study state lives in chrome.storage, reachable only through content.js.
+  const bridgeRequest = (action, payload = {}, timeoutMs = 5000) =>
+    new Promise((resolve, reject) => {
+      const requestId = "fuo_" + Math.random().toString(36).slice(2) + Date.now();
+      const onMessage = (event) => {
+        if (event.source !== window || event.data?.source !== "fuo-isolated") return;
+        if (event.data.requestId !== requestId) return;
+        window.removeEventListener("message", onMessage);
+        clearTimeout(timeoutId);
+        if (event.data.error) reject(new Error(event.data.error));
+        else resolve(event.data);
       };
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify(all));
-      window.dispatchEvent(
-        new CustomEvent("fuo:progress-updated", {
-          detail: { id, current: Number(current), total: Number(total) }
-        })
-      );
-    } catch {
-      /* storage unavailable: progress just won't persist */
-    }
-  };
+      const timeoutId = setTimeout(() => {
+        window.removeEventListener("message", onMessage);
+        reject(new Error("Extension context invalidated (no response)."));
+      }, timeoutMs);
+      window.addEventListener("message", onMessage);
+      window.postMessage({ source: "fuo-main", action, requestId, threadId: threadKey(), ...payload }, location.origin);
+    });
 
-  const loadFlags = () => {
-    try {
-      const all = JSON.parse(localStorage.getItem(FLAGS_KEY)) || {};
-      return new Set(all[threadKey()] || []);
-    } catch {
-      return new Set();
-    }
-  };
+  const getThreadState = () => bridgeRequest("getThreadState").then((r) => r.state);
 
-  const saveFlags = (flags) => {
-    try {
-      const all = JSON.parse(localStorage.getItem(FLAGS_KEY)) || {};
-      if (flags.size) all[threadKey()] = [...flags].sort((a, b) => a - b);
-      else delete all[threadKey()];
-      localStorage.setItem(FLAGS_KEY, JSON.stringify(all));
-    } catch {
-      /* storage unavailable: flags just won't persist */
-    }
-  };
+  const saveStudyProgress = (current, total) =>
+    window.postMessage({ source: "fuo-main", action: "setProgress", threadId: threadKey(), current, total }, location.origin);
+
+  const isInvalidated = (err) => /context invalidated/i.test(err?.message || "");
 
   const el = (tag, className, text) => {
     const node = document.createElement(tag);
@@ -70,6 +52,65 @@
     if (text !== undefined) node.textContent = text;
     return node;
   };
+
+  // In-panel replacement for alert()/confirm(). Resolves true on confirm.
+  const showModal = ({ title, body, confirmText = "Đã hiểu", cancelText }) =>
+    new Promise((resolve) => {
+      const overlay = el("div", "fuo-modal");
+      const card = el("div", "fuo-modal__card");
+      card.setAttribute("role", "dialog");
+      card.setAttribute("aria-modal", "true");
+      const heading = el("div", "fuo-modal__title", title);
+      const text = el("div", "fuo-modal__body", body);
+      const actions = el("div", "fuo-modal__actions");
+      const ok = el("button", "is-primary", confirmText);
+      ok.type = "button";
+
+      // Capture keys first so Fancybox does not close or change slides underneath the modal.
+      const onKey = (e) => {
+        if (e.key === "Escape") close(false);
+        else if (e.key === "Enter") close(true);
+        else if (e.key !== "Tab") return;
+        e.stopImmediatePropagation();
+      };
+      const close = (value) => {
+        window.removeEventListener("keydown", onKey, true);
+        overlay.classList.add("is-closing");
+        setTimeout(() => overlay.remove(), 180);
+        resolve(value);
+      };
+
+      if (cancelText) {
+        const cancel = el("button", "", cancelText);
+        cancel.type = "button";
+        cancel.addEventListener("click", () => close(false));
+        actions.append(cancel);
+      }
+      ok.addEventListener("click", () => close(true));
+      overlay.addEventListener("click", (e) => e.target === overlay && close(false));
+      actions.append(ok);
+      card.append(heading, text, actions);
+      overlay.append(card);
+      window.addEventListener("keydown", onKey, true);
+      (document.querySelector(".fancybox__container") || document.body).append(overlay);
+      ok.focus();
+    });
+
+  const askReload = () =>
+    showModal({
+      title: "Cần tải lại trang",
+      body: `Extension vừa được cập nhật/reload nên trang bị ngắt kết nối với extension.\n\nBấm "Tải lại" để F5 trang ${siteName} ngay.`,
+      confirmText: "Tải lại (F5)",
+      cancelText: "Để sau"
+    }).then((ok) => ok && location.reload());
+
+  const reportCaptureError = (err) =>
+    isInvalidated(err)
+      ? askReload()
+      : showModal({
+          title: "Không thể chụp màn hình",
+          body: `${err.message}\n\nHãy làm theo thứ tự:\n1. Mở brave://extensions (hoặc chrome://extensions)\n2. Bấm Reload extension "${EXT_NAME}"\n3. Quay lại tab ${siteName} và nhấn F5.`
+        });
 
   // Request visible tab screenshot from isolated content script -> background service worker
   const requestTabCapture = () => {
@@ -219,15 +260,21 @@
     await new Promise((r) => setTimeout(r, speedDelay));
   };
 
-  const build = (container, fancybox) => {
+  const build = async (container, fancybox) => {
     const total = fancybox.carousel.slides.length;
     if (total < 1) return;
 
-    const flags = loadFlags();
-    let current = fancybox.getSlide()?.index ?? 0;
+    // Read saved state before writing anything, otherwise the resume offer would see this open.
+    let state = { current: null, total: null, flags: [] };
+    try {
+      state = await getThreadState();
+    } catch (err) {
+      console.warn("[fuo] could not read study state:", err);
+    }
+    if (!container.isConnected || container.querySelector(`.${PANEL_CLASS}`)) return;
 
-    // Save initial study progress upon opening lightbox
-    saveStudyProgress(threadKey(), current + 1, total);
+    const flags = new Set(state.flags.filter((i) => i < total));
+    let current = fancybox.getSlide()?.index ?? 0;
 
     const wrap = el("div", PANEL_CLASS);
 
@@ -267,9 +314,9 @@
     top.append(summary, nextFlag);
 
     // If opened at slide 0 but previously studied further, offer quick resume
-    const saved = loadProgress()[threadKey()];
-    const lastStudied = saved?.current;
-    if (lastStudied && lastStudied > 1 && lastStudied <= total && current === 0) {
+    const lastStudied = state.current;
+    const offerResume = lastStudied && lastStudied > 1 && lastStudied <= total && current === 0;
+    if (offerResume) {
       const resumeBtn = el("button", "fuo-jump__resume", `Tiếp tục câu ${lastStudied} →`);
       resumeBtn.type = "button";
       resumeBtn.title = `Nhảy tới câu ${lastStudied} đang học trước đó`;
@@ -404,7 +451,7 @@
 
         const slideIdx = indexes[k];
         stopBtn.textContent = `Dừng (${k + 1}/${indexes.length})`;
-        document.title = `(${k + 1}/${indexes.length}) Đang chụp... - FuOverflow`;
+        document.title = `(${k + 1}/${indexes.length}) Đang chụp... - ${siteName}`;
 
         fancybox.jumpTo(slideIdx);
         await waitForSlideReady(fancybox, container, slideIdx, savedSpeed);
@@ -422,19 +469,10 @@
           capturedFiles.push({ name, data: bytes });
         } catch (err) {
           console.error(`Lỗi chụp câu ${slideIdx + 1}:`, err);
-          // If first slide fails, abort immediately and alert with clear instructions
+          // If first slide fails, abort immediately and explain how to recover
           if (k === 0) {
             abortCapture = true;
-            const isInvalidated = /context invalidated/i.test(err?.message || "");
-            if (isInvalidated) {
-              if (confirm("Extension vừa được cập nhật/reload nên trang web bị ngắt kết nối với extension.\n\nBấm OK để tự động tải lại (F5) trang FuOverflow ngay bây giờ!")) {
-                location.reload();
-              }
-            } else {
-              alert(
-                `Không thể chụp màn hình: ${err.message}\n\nHãy làm theo đúng thứ tự sau:\n1. Mở trang brave://extensions (hoặc chrome://extensions)\n2. Bấm nút Reload 🔄 của extension 'FuOverflow Test Checklist'\n3. QUAN TRỌNG: Quay lại tab FuOverflow và nhấn F5 tải lại trang!`
-              );
-            }
+            reportCaptureError(err);
             break;
           }
         } finally {
@@ -482,20 +520,11 @@
         const dataUrl = await requestTabCapture();
         const bytes = dataUrlToBytes(dataUrl);
         const blob = new Blob([bytes], { type: "image/png" });
-        saveBlob(blob, `fuoverflow-${threadKey()}-Cau-${String(cur + 1).padStart(2, "0")}.png`);
+        saveBlob(blob, `${siteId}-${threadKey()}-Cau-${String(cur + 1).padStart(2, "0")}.png`);
         showToast(`✓ Đã chụp câu ${cur + 1} kèm khung chat!`, 4000);
       } catch (err) {
         console.error("Lỗi chụp đơn:", err);
-        const isInvalidated = /context invalidated/i.test(err?.message || "");
-        if (isInvalidated) {
-          if (confirm("Extension vừa được cập nhật/reload nên trang web bị ngắt kết nối với extension.\n\nBấm OK để tự động tải lại (F5) trang FuOverflow ngay bây giờ!")) {
-            location.reload();
-          }
-        } else {
-          alert(
-            `Không thể chụp ảnh: ${err.message}\n\nHãy làm theo đúng thứ tự sau:\n1. Vào brave://extensions (hoặc chrome://extensions) bấm Reload 🔄 extension\n2. QUAN TRỌNG: Quay lại tab FuOverflow và nhấn F5 tải lại trang!`
-          );
-        }
+        reportCaptureError(err);
       } finally {
         isBusy = false;
         body.hidden = false;
@@ -506,10 +535,10 @@
 
     // Event listeners for screenshot capture
     capAll.addEventListener("click", () =>
-      runScreenshotCapture([...Array(total).keys()], `fuoverflow-${threadKey()}-kem-chat-tat-ca.zip`)
+      runScreenshotCapture([...Array(total).keys()], `${siteId}-${threadKey()}-kem-chat-tat-ca.zip`)
     );
     capFlagged.addEventListener("click", () =>
-      runScreenshotCapture([...flags].sort((a, b) => a - b), `fuoverflow-${threadKey()}-kem-chat-cau-co.zip`)
+      runScreenshotCapture([...flags].sort((a, b) => a - b), `${siteId}-${threadKey()}-kem-chat-cau-co.zip`)
     );
     capCurrent.addEventListener("click", runCaptureCurrent);
 
@@ -518,12 +547,32 @@
       toggle.classList.toggle("is-open", !body.hidden);
     });
 
-    flagBtn.addEventListener("click", () => {
-      if (flags.has(current)) flags.delete(current);
-      else flags.add(current);
-      saveFlags(flags);
+    const toggleFlag = (set, i) => (set.has(i) ? set.delete(i) : set.add(i));
+    flagBtn.addEventListener("click", async () => {
+      const i = current;
+      toggleFlag(flags, i);
       renderFlags();
+      try {
+        await bridgeRequest("setFlags", { flags: [...flags] });
+      } catch (err) {
+        toggleFlag(flags, i);
+        renderFlags();
+        if (isInvalidated(err)) askReload();
+        else showToast(`Không lưu được cờ: ${err.message}`, 5000);
+      }
     });
+
+    // Another tab (or Chrome Sync) changed this site's data: refresh flags.
+    const onStateChanged = (event) => {
+      if (event.source !== window || event.data?.source !== "fuo-isolated") return;
+      if (event.data.action !== "stateChanged") return;
+      getThreadState().then((s) => {
+        flags.clear();
+        s.flags.filter((i) => i < total).forEach((i) => flags.add(i));
+        renderFlags();
+      }, () => {});
+    };
+    window.addEventListener("message", onStateChanged);
 
     nextFlag.addEventListener("click", () => {
       const ordered = [...flags].sort((a, b) => a - b);
@@ -534,35 +583,37 @@
     // Keep the highlighted number in sync with the slide being shown.
     let last = -1;
     const sync = () => {
-      if (!container.isConnected) return clearInterval(timer);
+      if (!container.isConnected) {
+        window.removeEventListener("message", onStateChanged);
+        return clearInterval(timer);
+      }
       current = fancybox.getSlide()?.index ?? 0;
       if (current === last) return;
+      // Keep the older progress while the resume offer is showing at question 1;
+      // batch capture jumps through every slide, which is not studying.
+      const record = !isBusy && !(offerResume && last === -1);
       if (last >= 0) buttons[last].classList.remove("is-current");
       buttons[current]?.classList.add("is-current");
       last = current;
       label.textContent = `Câu ${current + 1}/${total}`;
       renderFlags();
-      // Record latest question progress
-      saveStudyProgress(threadKey(), current + 1, total);
+      if (record) saveStudyProgress(current + 1, total);
     };
     const timer = setInterval(sync, 250);
     sync();
   };
 
+  const building = new WeakSet();
   const tryAttach = () => {
     const container = document.querySelector(".fancybox__container");
-    if (!container || container.querySelector(`.${PANEL_CLASS}`)) return;
+    if (!container || building.has(container) || container.querySelector(`.${PANEL_CLASS}`)) return;
     // Fancybox adds the container first and finishes setting up the carousel and
     // sidebar afterwards, so bail out until they exist; a later mutation retries.
     if (container.classList.contains("fancybox-has-sidebar") && !container.querySelector(".fancybox-sidebar")) return;
     const fancybox = window.Fancybox?.getInstance?.();
     if (fancybox?.carousel?.slides) {
-      const total = fancybox.carousel.slides.length;
-      if (total >= 1) {
-        const cur = (fancybox.getSlide()?.index ?? 0) + 1;
-        saveStudyProgress(threadKey(), cur, total);
-      }
-      build(container, fancybox);
+      building.add(container);
+      build(container, fancybox).finally(() => building.delete(container));
     }
   };
 
