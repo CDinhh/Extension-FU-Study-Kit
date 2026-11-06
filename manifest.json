@@ -1,13 +1,18 @@
 {
   "manifest_version": 3,
-  "name": "FuOverflow Test Checklist",
-  "version": "1.1.1",
-  "description": "Tick the exam threads on FuOverflow that you have finished reviewing. Saved in localStorage.",
+  "name": "Exam Checklist for FuOverflow & FuExam",
+  "version": "2.0.0",
+  "description": "Tick exam threads you have reviewed on FuOverflow and FuExam, resume questions, flag unsure ones. Not official.",
   "permissions": [
-    "activeTab",
-    "tabs"
+    "storage"
   ],
   "host_permissions": [
+    "*://fuoverflow.com/*",
+    "*://*.fuoverflow.com/*",
+    "*://fuexam.me/*",
+    "*://*.fuexam.me/*"
+  ],
+  "optional_host_permissions": [
     "<all_urls>"
   ],
   "background": {
@@ -17,16 +22,20 @@
     {
       "matches": [
         "*://fuoverflow.com/*",
-        "*://*.fuoverflow.com/*"
+        "*://*.fuoverflow.com/*",
+        "*://fuexam.me/*",
+        "*://*.fuexam.me/*"
       ],
-      "js": ["content.js"],
+      "js": ["lib/store-core.js", "lib/storage.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     },
     {
       "matches": [
         "*://fuoverflow.com/*",
-        "*://*.fuoverflow.com/*"
+        "*://*.fuoverflow.com/*",
+        "*://fuexam.me/*",
+        "*://*.fuexam.me/*"
       ],
       "js": ["lightbox.js"],
       "css": ["lightbox.css"],
