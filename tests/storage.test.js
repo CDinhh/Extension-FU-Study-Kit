@@ -61,6 +61,18 @@ test("concurrent updateSite calls both survive", async () => {
   assert.deepEqual(C.fromSyncItems(chrome.storage.sync.data).fuexam.checklist, local.checklist);
 });
 
+test("two tabs (separate module instances) writing at once both survive", async () => {
+  const A = fresh();
+  delete require.cache[STORAGE_PATH];
+  const B = require(STORAGE_PATH); // second tab: own module state, same chrome.storage
+  const now = Date.now();
+  await Promise.all([
+    A.updateSite("fuexam", (d) => (d.checklist["1"] = { done: true, at: now })),
+    B.updateSite("fuexam", (d) => (d.checklist["2"] = { done: true, at: now }))
+  ]);
+  assert.deepEqual(Object.keys(chrome.storage.local.data["site:fuexam"].checklist).sort(), ["1", "2"]);
+});
+
 test("migrateLegacy is idempotent", async () => {
   const S = fresh();
   const raw = { checklist: '{"43":1700000000000}', progress: null, flags: '{"43":[1]}' };

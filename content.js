@@ -20,11 +20,26 @@
     return link ? extractThreadId(link.getAttribute("href") || "") : null;
   };
 
+  // After an extension update this tab's script is orphaned and cannot save: say so instead
+  // of pretending the change stuck.
+  const showStaleNotice = () => {
+    if (document.querySelector(".fuo-notice")) return;
+    const notice = document.createElement("div");
+    notice.className = "fuo-notice";
+    notice.setAttribute("role", "alert");
+    notice.textContent = "Extension vừa được cập nhật nên thay đổi chưa được lưu. Nhấn F5 để tải lại trang.";
+    document.body.append(notice);
+  };
+
   // Apply to the cache right away (instant UI), then persist with read-merge-write.
   const write = (mutate) => {
+    if (!alive()) {
+      showStaleNotice();
+      decorate(); // puts checkboxes/badges back to the saved state
+      return Promise.resolve(false);
+    }
     mutate(cache, Date.now());
     decorate();
-    if (!alive()) return Promise.resolve();
     return FuoStorage.updateSite(siteId, mutate).then(
       (site) => {
         cache = site;
@@ -41,6 +56,10 @@
     if (!id || (p && !p.removed)) return;
     write((d, now) => (d.progress[id] = { current: null, total: null, at: now }));
   };
+
+  // Opening a thread page marks it once per page view, so a later × (here, in another tab
+  // or on another device) is not undone by the next re-render.
+  let pageMarked = false;
 
   const removeStudying = (id) =>
     write((d, now) => (d.progress[id] = { current: null, total: null, removed: true, at: now }));
@@ -179,7 +198,10 @@
     const id = extractThreadId(location.pathname);
     if (!id) return;
 
-    markStudying(id);
+    if (!pageMarked) {
+      pageMarked = true;
+      markStudying(id);
+    }
 
     const titleEl = document.querySelector(".p-title-value");
     if (!titleEl) return;
@@ -217,6 +239,7 @@
   // Lightbox reports every slide change; batch them so chrome.storage.sync's write quota holds.
   const progressTimers = {};
   const setProgress = (id, current, total) => {
+    if (!alive()) return showStaleNotice();
     const apply = (d, now) => (d.progress[id] = { current, total, at: now });
     apply(cache, Date.now());
     decorate();

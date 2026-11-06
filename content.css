@@ -285,3 +285,40 @@
     animation: none;
   }
 }
+
+/* Shown when the extension was updated under an open tab and changes can no longer be saved. */
+.fuo-notice {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  z-index: 2147483646;
+  max-width: calc(100vw - 32px);
+  padding: 10px 18px;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 999px;
+  background: rgba(40, 28, 6, 0.88);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.6);
+  color: #fde68a;
+  font-size: 13px;
+  font-weight: 500;
+  transform: translateX(-50%);
+  animation: fuo-notice-in 500ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes fuo-notice-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fuo-notice {
+    animation: none;
+  }
+}

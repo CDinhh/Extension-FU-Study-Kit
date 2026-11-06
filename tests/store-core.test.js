@@ -128,6 +128,20 @@ test("validateImport rejects bad files", () => {
   assert.equal(C.validateImport(good()).ok, true);
 });
 
+test("validateImport rejects timestamps in the future", () => {
+  const future = Date.now() + 2 * DAY;
+  for (const s of [
+    site({ checklist: { 1: { done: true, at: future } } }),
+    site({ progress: { 1: { current: 1, total: 2, at: future } } }),
+    site({ flags: { 1: { 2: { on: true, at: future } } } })
+  ]) {
+    const r = C.validateImport(C.buildExport({ fuexam: s }, 1));
+    assert.equal(r.ok, false);
+  }
+  const ok = C.validateImport(C.buildExport({ fuexam: site({ checklist: { 1: { done: true, at: Date.now() } } }) }, 1));
+  assert.equal(ok.ok, true);
+});
+
 test("diffCounts counts added and updated entries", () => {
   const local = { fuexam: site({ checklist: { 1: { done: true, at: 1 } } }) };
   assert.deepEqual(C.diffCounts(local, { fuexam: site({ checklist: { 2: { done: true, at: 1 } } }) }).fuexam, {
