@@ -64,7 +64,7 @@ Khi mở ảnh đề, cột bên phải có panel điều khiển:
 - Hết phiên FAP thì extension mở tab FAP để bạn đăng nhập (cách nào cũng được), xong lịch tự cập nhật.
 - **Điểm danh:** đọc xong lịch, extension đi qua từng môn trong trang Báo cáo điểm danh của kỳ hiện tại.
   Rê chuột (hoặc Tab tới) một ô môn trong thời khóa biểu để xem tên môn đầy đủ, buổi đó có mặt hay vắng,
-  số buổi đã vắng / tổng số buổi và thanh "quỹ vắng" (FPT cho vắng tối đa 20% số buổi): **Còn vắng được N
+  và các ô "quỹ vắng": mỗi ô là một buổi được phép vắng (FPT cho vắng tối đa 20% số buổi), ô tô màu là buổi đã vắng: **Còn vắng được N
   buổi**, **Hết lượt vắng** hoặc **Quá 20%**. Ô của môn đã hết lượt vắng có viền dưới màu vàng, quá 20%
   thì viền đỏ.
 

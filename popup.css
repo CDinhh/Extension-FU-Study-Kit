@@ -165,53 +165,65 @@ body {
 .pp-tip__att {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 6px;
-  padding-top: 7px;
+  gap: 6px;
+  margin-top: 7px;
+  padding-top: 8px;
   border-top: 1px solid var(--hair);
 }
 
-.pp-tip__count {
-  color: var(--text);
+.pp-tip__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pp-tip__label {
+  color: var(--muted);
+  font-size: 10.5px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.pp-tip__bar {
-  position: relative;
-  height: 5px;
-  overflow: hidden;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.pp-tip__bar i {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--done);
-  transform-origin: left;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .pp-tip__note {
   color: var(--done);
+  font-weight: 600;
 }
 
-.pp-tip__att.is-edge .pp-tip__bar i {
-  background: var(--exam);
+/* One box per absence allowed; filled = already used. */
+.pp-tip__pips {
+  display: flex;
+  gap: 4px;
+}
+
+.pp-tip__pips i {
+  flex: 1;
+  max-width: 34px;
+  height: 8px;
+  border: 1px solid var(--hair-strong);
+  border-radius: 2px;
+}
+
+.pp-tip__pips i.is-used {
+  border-color: transparent;
+  background: var(--done);
 }
 
 .pp-tip__att.is-edge .pp-tip__note {
   color: var(--exam);
 }
 
-.pp-tip__att.is-over .pp-tip__bar i {
-  background: var(--danger);
+.pp-tip__att.is-edge .pp-tip__pips i.is-used {
+  background: var(--exam);
 }
 
 .pp-tip__att.is-over .pp-tip__note {
   color: var(--danger);
-  font-weight: 600;
+}
+
+.pp-tip__att.is-over .pp-tip__pips i.is-used {
+  background: var(--danger);
 }
 
 /* --- Revision progress: one row per forum --- */

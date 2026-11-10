@@ -265,10 +265,7 @@
     return {
       // A short course (under 5 sessions) allows no absence at all; say so without alarming.
       tone: left < 0 ? "is-over" : left === 0 && allowed ? "is-edge" : "",
-      note: !c.total ? "Chưa có buổi" : left < 0 ? "Quá 20%, có thể bị cấm thi" : !allowed ? "Không được vắng buổi nào" : left === 0 ? "Hết lượt vắng" : `Còn vắng được ${left} buổi`,
-      // The bar is the absence allowance: full means none left.
-      fill: allowed ? Math.min(c.absent / allowed, 1) : c.absent ? 1 : 0,
-      pct: c.total ? Math.round((c.absent / c.total) * 100) : 0
+      note: !c.total ? "Chưa có buổi" : left < 0 ? "Quá 20%, có thể bị cấm thi" : !allowed ? "Không được vắng" : left === 0 ? "Hết lượt vắng" : `Còn vắng được ${left} buổi`
     };
   };
 
@@ -292,17 +289,25 @@
     if (session) tip.append(el("span", `pp-tip__session is-${item.attended || "none"}`, `Buổi này: ${session}`));
     if (c) {
       const st = attState(c);
+      const allowed = Math.floor(c.total * ATT_LIMIT);
       const box = el("div", ["pp-tip__att", st.tone].filter(Boolean).join(" "));
-      const bar = el("span", "pp-tip__bar");
-      const fill = el("i");
-      fill.style.transform = `scaleX(${st.fill})`;
-      bar.append(fill);
-      box.append(
-        el("span", "pp-tip__count", `Vắng ${c.absent}/${c.total} buổi · ${st.pct}%`),
-        bar,
-        el("span", "pp-tip__note", st.note),
-        el("span", "pp-tip__meta", `Có mặt ${c.present} · Chưa điểm danh ${c.pending}`)
-      );
+      const head = el("div", "pp-tip__head");
+      head.append(el("span", "pp-tip__label", "Điểm danh"), el("span", "pp-tip__note", st.note));
+      box.append(head);
+      // One box per absence the course allows; filled ones are absences already used.
+      if (allowed && allowed <= 12) {
+        const pips = el("div", "pp-tip__pips");
+        for (let i = 0; i < Math.max(allowed, c.absent); i++) pips.append(el("i", i < c.absent ? "is-used" : ""));
+        box.append(pips);
+      }
+      const detail = !c.total
+        ? ""
+        : !allowed
+        ? `Môn chỉ có ${c.total} buổi nên vắng 1 buổi là quá 20%.${c.absent ? ` Đã vắng ${c.absent} buổi.` : ""}`
+        : c.absent > allowed
+          ? `Đã vắng ${c.absent} buổi, quá mức ${allowed} buổi được phép (20% của ${c.total} buổi).`
+          : `Đã vắng ${c.absent} trên ${allowed} buổi được phép (20% của ${c.total} buổi).`;
+      if (detail) box.append(el("span", "pp-tip__meta", detail));
       tip.append(box);
     }
     tip.hidden = false;

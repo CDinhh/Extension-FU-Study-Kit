@@ -72,7 +72,7 @@ toolbar → **"Cho phép"** (allow). The extension only captures when you press 
   method works), then the timetable updates by itself.
 - **Attendance:** after the timetable, the extension goes through each course on the attendance
   report page for the current term. Hover (or Tab to) a class in the timetable to see the full course
-  name, whether you attended that session, absences / total sessions and an "absence allowance" bar
+  name, whether you attended that session, an "absence allowance" row of boxes (one per absence allowed, filled ones already used)
   (FPT allows at most 20% of sessions): **"Còn vắng được N buổi"** (N more allowed), **"Hết lượt vắng"**
   (none left) or **"Quá 20%"** (over the limit). Classes of a course with no absences left get an
   amber bottom edge; over the limit, a red one.
