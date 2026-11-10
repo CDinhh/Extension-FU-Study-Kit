@@ -67,9 +67,19 @@ async function api(url, init = {}, retry = true) {
     await chrome.storage.session.remove("driveToken");
     return api(url, init, false);
   }
-  // 403 with a scope reason: the Drive permission was refused or later removed in the Google account.
-  if (res.status === 403 && /insufficient|scope/i.test(await res.clone().text())) throw new Error(NO_DRIVE);
-  if (!res.ok) throw new Error(`Google Drive báo lỗi ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text();
+    // 403 with a scope reason: the Drive permission was refused or later removed in the Google account.
+    if (res.status === 403 && /insufficient|scope/i.test(body)) throw new Error(NO_DRIVE);
+    // Otherwise pass Google's own reason on (e.g. the Drive API is not enabled for the project).
+    let reason = "";
+    try {
+      reason = String(JSON.parse(body).error?.message || "").slice(0, 160);
+    } catch {
+      // Not JSON: the status alone will do.
+    }
+    throw new Error(`Google Drive báo lỗi ${res.status}${reason ? `: ${reason}` : ""}`);
+  }
   return res;
 }
 
