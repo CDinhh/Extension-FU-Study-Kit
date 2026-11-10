@@ -23,10 +23,11 @@ const NO_DRIVE = "Chưa cho phép quyền Google Drive";
 const NO_CALENDAR = "Chưa cho phép quyền Google Calendar";
 
 async function authorize(interactive, withCalendar) {
-  const { drive, googleScopes } = await chrome.storage.local.get(["drive", "googleScopes"]);
+  const { drive, googleScopes, calendar: calendarCfg } = await chrome.storage.local.get(["drive", "googleScopes", "calendar"]);
   const state = crypto.randomUUID();
-  // A silent renewal may only ask for what was granted before, or Google refuses it outright.
-  const calendar = withCalendar || (googleScopes || []).includes(SCOPE_CALENDAR);
+  // A silent renewal may only ask for what was granted before, or Google refuses it outright. A
+  // sign-in by hand also asks for Calendar when it is turned on: signing out revoked that permission.
+  const calendar = withCalendar || (googleScopes || []).includes(SCOPE_CALENDAR) || (interactive && !!calendarCfg?.on);
   const scopes = [DRIVE_SCOPES, ...(calendar ? [SCOPE_CALENDAR] : [])].join(" ");
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.search = new URLSearchParams({

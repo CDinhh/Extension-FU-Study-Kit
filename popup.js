@@ -9,7 +9,7 @@
     return node;
   };
 
-  // Light / dark: follows the system until the header button picks one. Kept in localStorage so
+  // Light / dark: light by default, dark once the header button picks it. Kept in localStorage so
   // it applies before the first paint (chrome.storage would answer after it).
   const THEME_KEY = "fuo-theme";
   const readTheme = () => {
@@ -24,7 +24,7 @@
   };
   applyTheme(readTheme());
   $("theme").addEventListener("click", () => {
-    const now = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    const now = document.documentElement.dataset.theme || "light";
     const next = now === "dark" ? "light" : "dark";
     applyTheme(next);
     try {
@@ -597,7 +597,8 @@
     ]);
     const cfg = { ...FuoCore.CALENDAR_DEFAULTS, ...calendar };
     calendarCfg = cfg;
-    $("calOn").checked = cfg.on;
+    // Without the permission (e.g. after signing out) the switch shows off, so turning it on asks again.
+    $("calOn").checked = cfg.on && st.error !== NO_CALENDAR;
     $("calOpts").hidden = !cfg.on && !st.error;
     $("calClasses").checked = cfg.classes;
     $("calExams").checked = cfg.exams;

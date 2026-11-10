@@ -47,64 +47,6 @@
 }
 
 :root {
-  --bg: #0b0c0f;
-  --card: #121419;
-  --cell: #191c22;
-  --pop: #1a1d24;
-  --ink: 255, 255, 255;
-  --hair: rgba(255, 255, 255, 0.07);
-  --hair-strong: rgba(255, 255, 255, 0.13);
-  --text: #e9ebef;
-  --muted: rgba(233, 235, 239, 0.52);
-  --accent: #6ea8fe;
-  --accent-rgb: 110, 168, 254;
-  --accent-text: #cfe0ff;
-  --exam: #f5a524;
-  --exam-rgb: 245, 165, 36;
-  --done: #3ecf8e;
-  --danger: #f06a6a;
-  --danger-rgb: 240, 106, 106;
-  --danger-text: #fecaca;
-  --knob: rgba(233, 235, 239, 0.6);
-  --switch-on: rgba(110, 168, 254, 0.3);
-  --scrim: rgba(5, 6, 8, 0.6);
-  --shadow: rgba(0, 0, 0, 0.7);
-  --ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --r: 10px;
-  --r-sm: 6px;
-  color-scheme: dark;
-}
-
-/* Light theme: the system choice, unless the header toggle picked one (data-theme on <html>). */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #f3f4f7;
-    --card: #ffffff;
-    --cell: #f6f7f9;
-    --pop: #ffffff;
-    --ink: 15, 23, 42;
-    --hair: rgba(15, 23, 42, 0.09);
-    --hair-strong: rgba(15, 23, 42, 0.16);
-    --text: #161a22;
-    --muted: rgba(22, 26, 34, 0.56);
-    --accent: #2563eb;
-    --accent-rgb: 37, 99, 235;
-    --accent-text: #1d4ed8;
-    --exam: #c26d00;
-    --exam-rgb: 217, 119, 6;
-    --done: #138a55;
-    --danger: #d93636;
-    --danger-rgb: 217, 54, 54;
-    --danger-text: #b42323;
-    --knob: rgba(22, 26, 34, 0.35);
-    --switch-on: #2563eb;
-    --scrim: rgba(15, 23, 42, 0.3);
-    --shadow: rgba(15, 23, 42, 0.22);
-    color-scheme: light;
-  }
-}
-
-:root[data-theme="light"] {
   --bg: #f3f4f7;
   --card: #ffffff;
   --cell: #f6f7f9;
@@ -128,6 +70,36 @@
   --scrim: rgba(15, 23, 42, 0.3);
   --shadow: rgba(15, 23, 42, 0.22);
   color-scheme: light;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --r: 10px;
+  --r-sm: 6px;
+}
+
+/* Dark theme: only when the header toggle picked it (data-theme on <html>); light is the default. */
+:root[data-theme="dark"] {
+  --bg: #0b0c0f;
+  --card: #121419;
+  --cell: #191c22;
+  --pop: #1a1d24;
+  --ink: 255, 255, 255;
+  --hair: rgba(255, 255, 255, 0.07);
+  --hair-strong: rgba(255, 255, 255, 0.13);
+  --text: #e9ebef;
+  --muted: rgba(233, 235, 239, 0.52);
+  --accent: #6ea8fe;
+  --accent-rgb: 110, 168, 254;
+  --accent-text: #cfe0ff;
+  --exam: #f5a524;
+  --exam-rgb: 245, 165, 36;
+  --done: #3ecf8e;
+  --danger: #f06a6a;
+  --danger-rgb: 240, 106, 106;
+  --danger-text: #fecaca;
+  --knob: rgba(233, 235, 239, 0.6);
+  --switch-on: rgba(110, 168, 254, 0.3);
+  --scrim: rgba(5, 6, 8, 0.6);
+  --shadow: rgba(0, 0, 0, 0.7);
+  color-scheme: dark;
 }
 
 * {
@@ -168,6 +140,7 @@ body {
 
 .pp-head {
   top: 0;
+  z-index: 11; /* above the footer, so the account menu it holds is never covered */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -190,6 +163,8 @@ body {
   z-index: 25;
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - 64px); /* the popup is at most 600px tall: scroll inside instead of off-screen */
+  overflow-y: auto;
   width: 272px;
   padding: 11px 12px 12px;
   border: 1px solid var(--hair-strong);

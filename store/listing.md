@@ -97,8 +97,9 @@ https://cdinhh.github.io/Extension-FU-Study-Kit/privacy.html
 `store/screenshots/`:
 
 1. `01-list.png`: thread list with checkboxes, badges and the progress bar.
-2. `02-lightbox.png`: question-jump panel inside the image viewer.
-3. `03-popup.png`: popup with per-site stats and export/import.
+2. `02-lightbox.png`: image viewer with the question grid, flagged questions and screenshot tools.
+3. `03-popup.png`: popup with the FAP timetable and the attendance tooltip (light theme).
+4. `04-account.png`: account menu with Google Drive sync and the Google Calendar options (dark theme).
 
 ## Packaging
 
