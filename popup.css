@@ -177,6 +177,9 @@ body {
 }
 
 .pp-head h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 2px 2px;
   font-size: 17px;
   font-weight: 600;
