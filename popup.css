@@ -156,29 +156,148 @@ body {
   font-size: 11px;
 }
 
-.pp-stats {
+.pp-site {
+  flex-wrap: wrap;
+}
+
+/* Studied subjects: a chip per course, the open one lists its tests below the row. */
+.pp-chips {
   display: flex;
   flex: 1;
-  gap: 14px;
-  margin: 0;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
 }
 
-.pp-stats > div {
+.pp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-sm);
+  background: var(--cell);
+  color: var(--text);
+  font: 600 11.5px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    border-color 250ms var(--ease),
+    background-color 250ms var(--ease),
+    transform 300ms var(--ease);
+}
+
+.pp-chip:hover {
+  border-color: rgba(110, 168, 254, 0.45);
+}
+
+.pp-chip:active {
+  transform: scale(0.97);
+}
+
+.pp-chip:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.6);
+  outline-offset: 1px;
+}
+
+.pp-chip[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: rgba(110, 168, 254, 0.12);
+}
+
+.pp-chip__n {
+  min-width: 16px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pp-subj {
+  flex-basis: 100%;
+  padding: 8px 10px 6px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  background: var(--cell);
+  animation: pp-rise 350ms var(--ease) both;
+}
+
+.pp-subj__head {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  justify-content: space-between;
+  margin-bottom: 4px;
 }
 
-.pp-stats dd {
-  margin: 0;
-  font-size: 13px;
+.pp-subj__name {
   font-weight: 600;
+}
+
+.pp-subj__open {
+  color: var(--accent);
+  font-size: 11.5px;
+  text-decoration: none;
+}
+
+.pp-subj__open:hover {
+  text-decoration: underline;
+}
+
+.pp-subj__list {
+  display: flex;
+  flex-direction: column;
+  max-height: 168px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.pp-test {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 6px;
+  margin-inline: -6px;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  text-decoration: none;
+  transition: background-color 200ms var(--ease);
+}
+
+.pp-test:hover,
+.pp-test:focus-visible {
+  background: rgba(255, 255, 255, 0.05);
+  outline: none;
+}
+
+.pp-test__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-test__flag {
+  color: var(--exam);
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
-.pp-stats dt {
+.pp-test__state {
   color: var(--muted);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pp-test__state.is-done {
+  color: var(--done);
 }
 
 /* --- Buttons with the nested icon island --- */

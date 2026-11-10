@@ -258,10 +258,63 @@
     if (area === "local" && changes.prefs) applyPrefs(changes.prefs.newValue);
   });
 
+  // --- Titles and subjects of studied threads, for the popup's list. Local only: not synced or exported. ---
+  // shortcut: entries are never pruned (~100 bytes each), add pruning if someone studies thousands of threads.
+  const metaKey = `threads:${siteId}`;
+  const clean = (node) => (node ? node.textContent.replace(/\s+/g, " ").trim().slice(0, 200) : "");
+  const studied = (id) => FuoCore.isDone(cache, id) || FuoCore.isStudying(cache, id) || FuoCore.flagSet(cache, id).size > 0;
+  let metaSent = "";
+  let metaTimer = null;
+
+  const collectMeta = () => {
+    const found = {};
+    const path = location.pathname;
+    if (path.includes("/threads/")) {
+      const id = extractThreadId(path);
+      const titleEl = document.querySelector(".p-title-value");
+      // The last forum crumb is the subject. FuExam repeats the crumbs at the bottom, so read the first trail.
+      const crumb = [...(document.querySelector(".p-breadcrumbs")?.querySelectorAll('a[href*="/forums/"]') || [])].pop();
+      if (id && titleEl) {
+        const copy = titleEl.cloneNode(true);
+        copy.querySelectorAll(".fuo-badge, .fuo-check, .label, .labelLink").forEach((n) => n.remove());
+        found[id] = { title: clean(copy), subject: clean(crumb), subjectUrl: crumb?.href || "" };
+      }
+    } else if (path.startsWith("/forums/")) {
+      // On a forum page the forum is the subject. Row prefix links are not (FuExam points them at the forum too).
+      const subject = clean(document.querySelector(".p-title-value"));
+      const subjectUrl = location.origin + path.replace(/page-\d+\/?$/, "");
+      document.querySelectorAll(".structItem--thread[data-fuo-id]").forEach((item) => {
+        const id = item.dataset.fuoId;
+        const link = item.querySelector('.structItem-title a[href*="/threads/"]:not(.labelLink)');
+        if (studied(id) && link) found[id] = { title: clean(link), subject, subjectUrl };
+      });
+    }
+    return found;
+  };
+
+  const saveMeta = async () => {
+    const found = collectMeta();
+    const sig = JSON.stringify(found);
+    if (sig === "{}" || sig === metaSent || !alive()) return;
+    metaSent = sig;
+    const all = (await chrome.storage.local.get(metaKey))[metaKey] || {};
+    let changed = false;
+    for (const [id, entry] of Object.entries(found)) {
+      const next = { ...all[id] };
+      for (const [k, v] of Object.entries(entry)) if (v) next[k] = v;
+      if (FuoCore.sameData(next, all[id] || {})) continue;
+      all[id] = next;
+      changed = true;
+    }
+    if (changed) await chrome.storage.local.set({ [metaKey]: all });
+  };
+
   const decorate = () => {
     decorateThreadList();
     decorateThreadPage();
     watchCommunity();
+    clearTimeout(metaTimer);
+    metaTimer = setTimeout(() => saveMeta().catch(() => {}), 800);
   };
 
   // --- Bridge for lightbox.js (MAIN world cannot call chrome.*) ---

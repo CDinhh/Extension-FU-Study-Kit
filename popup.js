@@ -43,29 +43,79 @@
     return label;
   };
 
+  const link = (className, text, href) => {
+    const a = el("a", className, text);
+    Object.assign(a, { href, target: "_blank", rel: "noopener" });
+    return a;
+  };
+
+  const testState = (t) => {
+    if (t.done) return ["is-done", "Đã ôn"];
+    if (t.current) return ["", t.total ? `Câu ${t.current}/${t.total}` : `Câu ${t.current}`];
+    return ["", t.flags ? "" : "Đang học"];
+  };
+
+  // One open subject per forum, kept across re-renders.
+  const openSubject = {};
+
+  const subjectPanel = (host, g) => {
+    const panel = el("div", "pp-subj");
+    const head = el("div", "pp-subj__head");
+    head.append(el("span", "pp-subj__name", g.subject));
+    // The forum URL was read from the forum's own page; only follow it on that forum.
+    if (g.url.startsWith(`https://${host}/`)) head.append(link("pp-subj__open", "Mở môn ↗", g.url));
+    const list = el("ul", "pp-subj__list");
+    for (const t of g.tests) {
+      const full = t.title || `Đề #${t.tid}`;
+      // "MLN122 - Q2 - 6" reads as "Q2 - 6" under the MLN122 heading.
+      const title = (full.startsWith(g.subject) && full.slice(g.subject.length).replace(/^\s*[-–:]\s*/, "")) || full;
+      const [tone, state] = testState(t);
+      const a = link("pp-test", "", `https://${host}/threads/${t.tid}/`);
+      a.title = full;
+      a.append(el("span", "pp-test__title", title));
+      if (t.flags) a.append(el("span", "pp-test__flag", `⚑ ${t.flags}`));
+      if (state) a.append(el("span", `pp-test__state ${tone}`, state));
+      const li = el("li");
+      li.append(a);
+      list.append(li);
+    }
+    panel.append(head, list);
+    return panel;
+  };
+
   const renderSites = async () => {
-    prefs = (await chrome.storage.local.get("prefs")).prefs || {};
-    const sites = await FuoStorage.loadAllSites();
+    const metaKey = (id) => `threads:${id}`;
+    const ids = Object.keys(FuoCore.SITES);
+    const [local, sites] = await Promise.all([chrome.storage.local.get(["prefs", ...ids.map(metaKey)]), FuoStorage.loadAllSites()]);
+    prefs = local.prefs || {};
     const wrap = $("sites");
     wrap.replaceChildren();
-    Object.entries(FuoCore.SITES).forEach(([id, meta]) => {
-      const counts = FuoCore.countSite(sites[id]);
+    for (const id of ids) {
+      const { name, host } = FuoCore.SITES[id];
+      const groups = FuoCore.studiedBySubject(sites[id], local[metaKey(id)]);
       const row = el("div", "pp-site");
-      const stats = el("dl", "pp-stats");
-      for (const [cls, label, n] of [
-        ["is-done", "Đã ôn", counts.done],
-        ["is-study", "Đang học", counts.studying],
-        ["is-flag", "Câu gắn cờ", counts.flagged]
-      ]) {
-        const cell = el("div", cls);
-        cell.append(el("dd", "", String(n)), el("dt", "", label));
-        stats.append(cell);
+      const chips = el("div", "pp-chips");
+      const siteLink = link("pp-site__name", name, `https://${host}/`);
+      siteLink.title = `Mở ${host}`;
+      if (!groups.some((g) => g.subject === openSubject[id])) delete openSubject[id];
+      for (const g of groups) {
+        const chip = el("button", "pp-chip");
+        chip.type = "button";
+        chip.setAttribute("aria-expanded", String(g.subject === openSubject[id]));
+        chip.title = `${g.tests.length} đề đã ôn`;
+        chip.append(el("span", "", g.subject), el("span", "pp-chip__n", String(g.tests.length)));
+        chip.addEventListener("click", () => {
+          openSubject[id] = openSubject[id] === g.subject ? undefined : g.subject;
+          renderSites();
+        });
+        chips.append(chip);
       }
-      const name = el("a", "pp-site__name", meta.name);
-      Object.assign(name, { href: `https://${meta.host}/`, target: "_blank", rel: "noopener", title: `Mở ${meta.host}` });
-      row.append(name, stats, siteSwitch(id) || el("span", "pp-site__host", meta.host));
+      if (!groups.length) chips.append(el("span", "pp-site__host", "Chưa ôn đề nào"));
+      row.append(siteLink, chips, siteSwitch(id) || el("span"));
+      const open = groups.find((g) => g.subject === openSubject[id]);
+      if (open) row.append(subjectPanel(host, open));
       wrap.append(row);
-    });
+    }
   };
 
   const renderSyncError = async () => {
@@ -257,6 +307,7 @@
   setInterval(() => renderTimetable(), 60000); // keeps "N phút trước" honest while the popup stays open
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.fapTimetable || changes.fapSync) renderTimetable();
+    if (Object.keys(changes).some((key) => key.startsWith("threads:"))) renderSites();
   });
 
   const localDate = () => {

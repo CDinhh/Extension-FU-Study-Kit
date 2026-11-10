@@ -94,6 +94,9 @@ It lives in the browser's `chrome.storage`:
 
 The capture speed and the answer-cover positions are kept in the forum page's `localStorage`.
 The switches that hide the forums' banner/popup are kept in `chrome.storage.local`.
+So the popup can list what you studied, the title and subject (forum name and link) of each thread
+you studied are also kept in `chrome.storage.local`, on this device only: they are not synced and
+not included in the export file.
 
 **FAP timetable (optional, off by default):** when you press "Bật thời khóa biểu", the extension
 opens `fap.fpt.edu.vn/WeeklyTimetable` in a tab using your existing session, reads the weekly tables
