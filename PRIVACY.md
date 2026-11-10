@@ -1,6 +1,6 @@
 # Chính sách quyền riêng tư / Privacy Policy
 
-**Exam Checklist for FuOverflow & FuExam** · cập nhật / last updated: 2026-11-10
+**FU Study Kit: Exam Checklist & FAP Timetable** · cập nhật / last updated: 2026-11-10
 
 Đây không phải extension chính thức của FuOverflow / FuExam.
 This is not an official FuOverflow / FuExam extension.

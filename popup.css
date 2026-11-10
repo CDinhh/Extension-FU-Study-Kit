@@ -73,7 +73,7 @@ body {
 }
 
 body {
-  width: 368px;
+  width: 540px;
   background: var(--bg);
   color: var(--text);
   font: 400 13px/1.5 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
@@ -581,18 +581,46 @@ svg {
   gap: 8px;
 }
 
-.pp-tt__meta {
-  margin-left: auto;
+.pp-tt__titles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pp-tt__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: var(--muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
+.pp-tt__status::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--done);
+}
+
+.pp-tt__status.is-warn::before {
+  background: var(--flag);
+}
+
+.pp-tt__status.is-busy::before {
+  background: var(--study);
+  animation: pp-pulse 1s var(--ease) infinite alternate;
+}
+
 .pp-tt__refresh {
   display: grid;
+  flex: none;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 1px solid var(--hair);
   border-radius: 7px;
@@ -622,12 +650,7 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  position: relative;
-  max-height: 250px;
-  margin-top: 8px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--hair-strong) transparent;
+  margin-top: 10px;
 }
 
 .pp-tt__note {
@@ -636,113 +659,141 @@ svg {
   font-size: 12px;
 }
 
-.pp-tt__note.is-warn {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(251, 191, 36, 0.1);
-  color: #fde68a;
-}
-
 .pp-tt__enable {
   align-self: flex-start;
   padding-right: 16px;
 }
 
-.pp-tt__day.is-past {
+.pp-tt__table {
+  width: calc(100% + 6px);
+  margin: -3px;
+  border-spacing: 3px;
+  table-layout: fixed;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.pp-tt__table th {
+  padding: 4px 2px;
+  color: var(--muted);
+  font-weight: 500;
+  text-align: center;
+}
+
+.pp-tt__table th:first-child {
+  width: 46px;
+}
+
+.pp-tt__table th span {
+  display: block;
+}
+
+.pp-tt__table td {
+  padding: 0;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.025);
+  vertical-align: top;
+}
+
+.pp-tt__table thead .is-today {
+  border-radius: 7px;
+  background: rgba(96, 165, 250, 0.14);
+  color: var(--study);
+}
+
+.pp-tt__table td.is-today {
+  background: rgba(96, 165, 250, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.22);
+}
+
+.pp-tt__table .is-past {
   opacity: 0.45;
 }
 
 .pp-tt__dayname {
-  margin: 0 0 4px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  color: var(--text);
+  font-weight: 600;
 }
 
-.pp-tt__day.is-today .pp-tt__dayname {
-  color: var(--study);
+.pp-tt__table thead .is-today .pp-tt__dayname {
+  color: inherit;
 }
 
-.pp-tt__list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pp-tt__item {
-  padding: 6px 10px;
-  border-left: 2px solid var(--hair-strong);
-  border-radius: 0 8px 8px 0;
-  background: rgba(255, 255, 255, 0.025);
-}
-
-.pp-tt__day.is-today .pp-tt__item {
-  border-left-color: var(--study);
-  background: rgba(96, 165, 250, 0.07);
-}
-
-.pp-tt__main {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+.pp-tt__slot {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .pp-tt__time {
-  flex: none;
   color: var(--flag);
-  font-size: 12px;
-  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
-.pp-tt__title {
-  flex: 1;
-  min-width: 0;
+.pp-tt__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 6px;
+  color: var(--muted);
+}
+
+/* Long class and lecturer names are cut; the cell tooltip has them in full. */
+.pp-tt__cell > * {
+  max-width: 100%;
   overflow: hidden;
-  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.pp-tt__cell + .pp-tt__cell {
+  border-top: 1px solid var(--hair);
+}
+
+.pp-tt__cell strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Attendance dot: green attended, red absent. */
+.pp-tt__cell.is-yes::after,
+.pp-tt__cell.is-no::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--done);
+}
+
+.pp-tt__cell.is-no::after {
+  background: var(--danger);
+}
+
 .pp-tt__tag {
-  flex: none;
-  padding: 1px 7px;
-  border-radius: 6px;
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 0 6px;
+  border-radius: 5px;
   background: rgba(52, 211, 153, 0.12);
   color: var(--done);
-  font-size: 11px;
   text-decoration: none;
 }
 
 a.pp-tt__tag:hover {
-  background: rgba(52, 211, 153, 0.22);
-}
-
-.pp-tt__sub {
-  display: flex;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.pp-tt__att {
-  margin-left: auto;
-}
-
-.pp-tt__att.is-yes {
-  color: var(--done);
-}
-
-.pp-tt__att.is-no {
-  color: var(--danger);
+  background: rgba(52, 211, 153, 0.24);
 }
 
 @keyframes pp-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pp-pulse {
+  to {
+    opacity: 0.3;
   }
 }

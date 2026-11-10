@@ -1,15 +1,16 @@
-# Exam Checklist for FuOverflow & FuExam
+# FU Study Kit: Exam Checklist & FAP Timetable
 
 Extension trình duyệt (Manifest V3) cho hai diễn đàn [FuOverflow](https://fuoverflow.com) và
-[FuExam](https://fuexam.me), giúp bạn theo dõi việc ôn đề thi:
+[FuExam](https://fuexam.me), giúp bạn theo dõi việc ôn đề thi và xem lịch học FAP:
 
 - đánh dấu những đề đã ôn xong ngay trên danh sách thread hoặc ngay trong đề;
 - theo dõi đề đang học và câu đang làm dở ngay trên danh sách đề;
 - nhảy nhanh tới câu bất kỳ khi xem ảnh đề, gắn cờ những câu chưa chắc;
 - **chụp màn hình tự động toàn bộ câu hỏi kèm khung chat thảo luận đáp án** (nén sẵn file ZIP);
+- **xem thời khóa biểu tuần của FAP ngay trong popup** (tuỳ chọn, tự cập nhật, luôn ghi rõ lần cập nhật gần nhất);
 - mang dữ liệu sang máy khác bằng **Xuất/Nhập file**, hoặc tự đồng bộ qua **Chrome Sync**.
 
-> Không phải extension chính thức của FuOverflow / FuExam.
+> Không phải extension chính thức của FuOverflow / FuExam / Đại học FPT.
 
 ![Danh sách đề](store/screenshots/01-list.png)
 

@@ -96,20 +96,83 @@
     return m && +m[1] === now.getDate() && +m[2] === now.getMonth() + 1 ? i : -1;
   };
 
-  const ttItem = (item) => {
-    const row = el("li", "pp-tt__item");
-    const main = el("div", "pp-tt__main");
-    main.append(el("span", "pp-tt__time", item.time || `Slot ${item.slot}`), el("span", "pp-tt__title", item.title));
+  const ttClock = (ms) => {
+    const at = new Date(ms);
+    const p = (n) => String(n).padStart(2, "0");
+    const day = at.toDateString() === new Date().toDateString() ? "" : `${p(at.getDate())}/${p(at.getMonth() + 1)} `;
+    return `${day}${p(at.getHours())}:${p(at.getMinutes())}`;
+  };
+
+  const ttAgo = (ms) => {
+    const min = Math.floor((Date.now() - ms) / 60000);
+    if (min < 1) return "vừa xong";
+    if (min < 60) return `${min} phút trước`;
+    if (min < 24 * 60) return `${Math.floor(min / 60)} giờ trước`;
+    return `${Math.floor(min / 1440)} ngày trước`;
+  };
+
+  // One line that always says how fresh the table is and what the sync is doing.
+  const ttStatus = (data, sync) => {
+    const saved = data ? ` · bản lưu lúc ${ttClock(data.fetchedAt)}` : "";
+    if (sync?.state === "attention") return ["warn", `Chờ bạn đăng nhập FAP ở tab vừa mở${saved}`];
+    if (sync) return ["busy", `Đang đồng bộ với FAP…${saved}`];
+    if (!data) return ["warn", "Chưa có lịch. Bấm làm mới để lấy từ FAP."];
+    const stale = Date.now() - data.fetchedAt > TT_STALE_MS;
+    return [stale ? "warn" : "ok", `${stale ? "Bản lưu cũ" : "Mới nhất"} · cập nhật ${ttAgo(data.fetchedAt)} (${ttClock(data.fetchedAt)})`];
+  };
+
+  const ttCell = (item, rowTime) => {
+    const [code, group] = item.title.split(" - ");
+    const cell = el("div", `pp-tt__cell${item.attended ? ` is-${item.attended}` : ""}`);
+    cell.title = [item.title, item.time, item.room, item.teacher, item.online && "Online", item.attendance].filter(Boolean).join("\n");
+    cell.append(el("strong", "", code));
+    if (group) cell.append(el("span", "", group));
+    if (item.time && item.time !== rowTime) cell.append(el("span", "pp-tt__time", item.time));
+    if (item.room) cell.append(el("span", "", item.room));
+    if (item.teacher) cell.append(el("span", "", item.teacher));
     if (item.online) {
       // The link comes from the FAP page, so only ever follow https.
-      const meet = item.meet.startsWith("https://") ? el("a", "pp-tt__tag is-online", "Online ↗") : el("span", "pp-tt__tag is-online", "Online");
+      const meet = item.meet.startsWith("https://") ? el("a", "pp-tt__tag", "Online ↗") : el("span", "pp-tt__tag", "Online");
       if (meet.tagName === "A") Object.assign(meet, { href: item.meet, target: "_blank", rel: "noopener" });
-      main.append(meet);
+      cell.append(meet);
     }
-    const sub = el("div", "pp-tt__sub", [item.time && `Slot ${item.slot}`, item.room, item.teacher].filter(Boolean).join(" · "));
-    if (item.attendance) sub.append(el("span", `pp-tt__att is-${item.attended || "none"}`, item.attendance));
-    row.append(main, sub);
-    return row;
+    return cell;
+  };
+
+  const ttTable = (data, today) => {
+    const tone = (i) => (i === today ? "is-today" : today >= 0 && i < today ? "is-past" : "");
+    // Weekend columns are dropped when empty so the weekday columns get the room.
+    const cols = data.days.map((_, i) => i).filter((i) => i < 5 || i === today || data.items.some((item) => item.day === i));
+    const head = el("tr");
+    head.append(el("th"));
+    for (const i of cols) {
+      const [, name, date] = /^(.*?)\s*\((.*)\)\s*$/.exec(data.days[i]) || [null, data.days[i], ""];
+      const th = el("th", tone(i));
+      th.scope = "col";
+      th.append(el("span", "pp-tt__dayname", i === today ? "Hôm nay" : name), el("span", "pp-tt__date", date));
+      head.append(th);
+    }
+    const thead = el("thead");
+    thead.append(head);
+    const tbody = el("tbody");
+    for (const slot of new Set(data.items.map((item) => item.slot))) {
+      const inSlot = data.items.filter((item) => item.slot === slot);
+      const rowTime = inSlot[0].time;
+      const row = el("tr");
+      const th = el("th");
+      th.scope = "row";
+      th.append(el("span", "pp-tt__slot", `Slot ${slot}`), ...rowTime.split("-").map((t) => el("span", "pp-tt__time", t.trim())));
+      row.append(th);
+      for (const i of cols) {
+        const td = el("td", tone(i));
+        td.append(...inSlot.filter((item) => item.day === i).map((item) => ttCell(item, rowTime)));
+        row.append(td);
+      }
+      tbody.append(row);
+    }
+    const table = el("table", "pp-tt__table");
+    table.append(thead, tbody);
+    return table;
   };
 
   const renderTimetable = async () => {
@@ -123,10 +186,10 @@
     const sync = session.fapSync;
     const today = data ? ttTodayIndex(data.days) : -1;
     const body = $("ttBody");
+    const status = $("ttStatus");
     body.replaceChildren();
-    $("ttRefresh").hidden = !enabled;
+    $("ttRefresh").hidden = status.hidden = !enabled;
     $("ttRefresh").classList.toggle("is-busy", !!sync);
-    $("ttMeta").textContent = "";
 
     if (!enabled) {
       body.append(el("p", "pp-tt__note", "Xem lịch học FAP ngay trong popup. Extension chỉ đọc trang thời khóa biểu của bạn và lưu trên máy này."));
@@ -144,32 +207,11 @@
       ttSync(false);
     }
 
-    if (sync?.state === "attention") body.append(el("p", "pp-tt__note is-warn", "FAP cần bạn đăng nhập ở tab vừa mở. Xong là lịch tự cập nhật."));
-    if (!data) {
-      if (sync?.state !== "attention") body.append(el("p", "pp-tt__note", "Đang lấy lịch từ FAP…"));
-      return;
-    }
-
-    const at = new Date(data.fetchedAt);
-    const p = (n) => String(n).padStart(2, "0");
-    const sameDay = at.toDateString() === new Date().toDateString();
-    $("ttMeta").textContent = `Cập nhật ${sameDay ? "" : `${p(at.getDate())}/${p(at.getMonth() + 1)} `}${p(at.getHours())}:${p(at.getMinutes())}`;
-
-    if (!data.items.length) return body.append(el("p", "pp-tt__note", "Tuần này không có lớp."));
-    data.days.forEach((label, i) => {
-      const items = data.items.filter((item) => item.day === i);
-      if (!items.length && i !== today) return;
-      const day = el("section", `pp-tt__day${i === today ? " is-today" : ""}${today >= 0 && i < today ? " is-past" : ""}`);
-      day.append(el("h3", "pp-tt__dayname", i === today ? `Hôm nay · ${label}` : label));
-      if (!items.length) day.append(el("p", "pp-tt__note", "Không có lớp."));
-      const list = el("ul", "pp-tt__list");
-      list.append(...items.map(ttItem));
-      day.append(list);
-      body.append(day);
-    });
-    // Open on today; earlier days stay one scroll up.
-    const todayEl = body.querySelector(".is-today");
-    if (todayEl) body.scrollTop = todayEl.offsetTop;
+    const [tone, text] = ttStatus(data, sync);
+    status.className = `pp-tt__status is-${tone}`;
+    status.textContent = text;
+    if (!data) return;
+    body.append(data.items.length ? ttTable(data, today) : el("p", "pp-tt__note", "Tuần này không có lớp."));
   };
 
   async function enableTimetable() {
@@ -185,6 +227,7 @@
   }
 
   $("ttRefresh").addEventListener("click", () => ttSync(true));
+  setInterval(() => renderTimetable(), 60000); // keeps "N phút trước" honest while the popup stays open
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.fapTimetable || changes.fapSync) renderTimetable();
   });

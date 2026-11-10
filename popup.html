@@ -2,22 +2,24 @@
 <html lang="vi">
   <head>
     <meta charset="utf-8" />
-    <title>Exam Checklist</title>
+    <title>FU Study Kit</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="pp">
       <header class="pp-head">
-        <span class="pp-eyebrow">FuOverflow · FuExam</span>
-        <h1>Exam Checklist</h1>
-        <p class="pp-sub">Không phải extension chính thức của FuOverflow / FuExam.</p>
+        <span class="pp-eyebrow">FuOverflow · FuExam · FAP</span>
+        <h1>FU Study Kit</h1>
+        <p class="pp-sub">Ôn đề và xem lịch học. Không phải extension chính thức của FuOverflow / FuExam / FPT.</p>
       </header>
 
       <section class="pp-card pp-tt" aria-label="Thời khóa biểu FAP">
         <div class="pp-card__core">
           <div class="pp-tt__head">
-            <span class="pp-site__name">Thời khóa biểu</span>
-            <span class="pp-tt__meta" id="ttMeta"></span>
+            <div class="pp-tt__titles">
+              <span class="pp-site__name">Thời khóa biểu</span>
+              <span class="pp-tt__status" id="ttStatus" role="status" hidden></span>
+            </div>
             <button type="button" class="pp-tt__refresh" id="ttRefresh" aria-label="Làm mới thời khóa biểu" title="Làm mới" hidden>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1M17.5 3.5v3.4h-3.4M6.5 20.5v-3.4h3.4" />
