@@ -1,3 +1,5 @@
+importScripts("lib/store-core.js", "lib/storage.js", "drive.js");
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.action === "captureTab") {
     // Any script on the forum page can ask for a capture through the bridge, so only ever
@@ -286,7 +288,12 @@ async function onFapCrawl(message, sender) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Extension pages only: forum pages can reach this worker through the content-script bridge.
-  if (message?.action === "fapSync" && sender.url?.startsWith(chrome.runtime.getURL(""))) startFapSync(!!message.focus, !!message.full);
+  const fromExtension = sender.url?.startsWith(chrome.runtime.getURL(""));
+  if (message?.action === "fapSync" && fromExtension) startFapSync(!!message.focus, !!message.full);
+  // Google Drive: sign-in must run here, the popup closes as soon as the Google window opens.
+  if (fromExtension && message?.action === "driveLogin") driveLogin();
+  if (fromExtension && message?.action === "driveSync") driveSync();
+  if (fromExtension && message?.action === "driveLogout") driveLogout();
   if (message?.action === "fapWeek" || message?.action === "fapDone") {
     onFapCrawl(message, sender).finally(() => sendResponse());
     return true;

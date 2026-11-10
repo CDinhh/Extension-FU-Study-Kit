@@ -167,6 +167,7 @@
   const FAP = { origins: ["https://fap.fpt.edu.vn/*"] };
   const TT_STALE_MS = 60 * 60 * 1000;
   let ttAsked = false;
+  let ttEnabled = false;
 
   const ttSync = (focus, full) => chrome.runtime.sendMessage({ action: "fapSync", focus, full }).catch(() => {});
 
@@ -384,6 +385,9 @@
     ]);
     const enabled = granted && !!local.prefs?.timetable;
     const data = local.fapTimetable?.weeks ? local.fapTimetable : null; // an older single-week cache is refetched
+    ttEnabled = enabled;
+    // A timetable synced from Google Drive shows even where FAP reading is not turned on.
+    const shown = enabled || !!data;
     const sync = session.fapSync;
     const thisWeek = ttThisWeek();
     ttKeys = [...new Set([...Object.keys(data?.weeks || {}), thisWeek])].sort();
@@ -393,7 +397,7 @@
     const body = $("ttBody");
     const status = $("ttStatus");
     body.replaceChildren();
-    $("ttRefresh").hidden = $("ttOpen").hidden = status.hidden = $("ttNav").hidden = !enabled;
+    $("ttRefresh").hidden = $("ttOpen").hidden = status.hidden = $("ttNav").hidden = !shown;
     $("ttRefresh").classList.toggle("is-busy", !!sync);
     $("ttPrev").disabled = ttView === ttKeys[0];
     $("ttNext").disabled = ttView === ttKeys[ttKeys.length - 1];
@@ -402,7 +406,7 @@
     renderAttendance(local.fapAttendance);
     hideTip();
 
-    if (!enabled) {
+    if (!shown) {
       body.append(el("p", "pp-tt__note", "Xem lịch học FAP ngay tại đây."));
       const btn = el("button", "pp-btn pp-btn--primary pp-tt__enable");
       btn.type = "button";
@@ -413,7 +417,7 @@
       return;
     }
 
-    if (!ttAsked && !sync && (!data?.weeks[thisWeek] || !local.fapAttendance || Date.now() - data.fetchedAt > TT_STALE_MS)) {
+    if (enabled && !ttAsked && !sync && (!data?.weeks[thisWeek] || !local.fapAttendance || Date.now() - data.fetchedAt > TT_STALE_MS)) {
       ttAsked = true;
       // Past weeks only change in attendance, so they are walked once, then on manual refresh.
       ttSync(false, !ttKeys.some((key) => key < thisWeek));
@@ -439,7 +443,8 @@
     renderTimetable();
   }
 
-  $("ttRefresh").addEventListener("click", () => ttSync(true, true));
+  // Without FAP reading turned on here (timetable from Drive), refreshing first asks to turn it on.
+  $("ttRefresh").addEventListener("click", () => (ttEnabled ? ttSync(true, true) : enableTimetable()));
   const ttStep = (by) => {
     ttView = by ? ttKeys[ttKeys.indexOf(ttView) + by] || ttView : ttThisWeek();
     renderTimetable();
@@ -452,6 +457,53 @@
     if (changes.fapTimetable || changes.fapAttendance || changes.fapSync) renderTimetable();
     if (Object.keys(changes).some((key) => key.startsWith("threads:"))) renderSites();
   });
+
+  // --- Google Drive: sign-in and syncing run in background.js; this only shows the state. ---
+  const CLOUD_ICON =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18.5h9.25a3.75 3.75 0 0 0 .6-7.45A5.5 5.5 0 0 0 6.7 9.6 4.5 4.5 0 0 0 7.5 18.5z"/></svg>';
+  let drive = null;
+
+  const renderAccount = async () => {
+    const [{ drive: d }, { driveBusy }] = await Promise.all([chrome.storage.local.get("drive"), chrome.storage.session.get("driveBusy")]);
+    drive = d?.account ? d : null;
+    const btn = $("acct");
+    $("logout").hidden = !drive;
+    btn.className = "pp-tt__refresh pp-acct";
+    if (!drive) {
+      btn.innerHTML = CLOUD_ICON;
+      btn.dataset.tipTitle = "Đồng bộ Google Drive";
+      btn.dataset.tip = d?.error
+        ? `Chưa đăng nhập được: ${d.error}. Bấm để thử lại.`
+        : "Đăng nhập Google để lưu tiến độ ôn đề, thời khóa biểu và điểm danh lên Drive của bạn, mở máy khác là có. Dữ liệu nằm trong thư mục ẩn riêng của extension.";
+      return;
+    }
+    const { email, name, picture } = drive.account;
+    btn.replaceChildren();
+    if (picture) {
+      const img = el("img");
+      Object.assign(img, { src: picture, alt: "", referrerPolicy: "no-referrer" });
+      btn.append(img);
+    } else {
+      btn.append(el("span", "pp-acct__initial", (name || email || "?").trim()[0].toUpperCase()));
+    }
+    btn.classList.add(driveBusy ? "is-busy" : drive.error ? "is-err" : "is-ok");
+    btn.dataset.tipTitle = name ? `${name} · ${email}` : email;
+    btn.dataset.tip = driveBusy
+      ? "Đang đồng bộ với Google Drive…"
+      : drive.error
+        ? `Đồng bộ lỗi: ${drive.error}. Bấm để thử lại.`
+        : `${drive.lastSync ? `Đã đồng bộ ${ttAgo(drive.lastSync)}` : "Chưa đồng bộ"}. Tự đồng bộ khi bạn ôn đề hoặc lịch cập nhật; bấm để đồng bộ ngay.`;
+  };
+
+  $("acct").addEventListener("click", () => {
+    const login = !drive || drive.error === "Cần đăng nhập lại";
+    chrome.runtime.sendMessage({ action: login ? "driveLogin" : "driveSync" }).catch(() => {});
+  });
+  $("logout").addEventListener("click", () => chrome.runtime.sendMessage({ action: "driveLogout" }).catch(() => {}));
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.drive || changes.driveBusy) renderAccount();
+  });
+  renderAccount().then(() => drive && chrome.runtime.sendMessage({ action: "driveSync" }).catch(() => {}));
 
   const localDate = () => {
     const d = new Date();

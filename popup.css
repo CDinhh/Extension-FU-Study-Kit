@@ -176,6 +176,61 @@ body {
   border-bottom: 1px solid var(--hair);
 }
 
+.pp-head__tools {
+  display: flex;
+  gap: 6px;
+}
+
+/* Google account: avatar with a status dot (synced, syncing, error). */
+.pp-acct {
+  position: relative;
+}
+
+.pp-acct img,
+.pp-acct__initial {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.pp-acct__initial {
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.pp-acct.is-ok::after,
+.pp-acct.is-busy::after,
+.pp-acct.is-err::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--card);
+  border-radius: 50%;
+  background: var(--done);
+}
+
+.pp-acct.is-busy::after {
+  background: var(--exam);
+  animation: pp-pulse 1s ease-in-out infinite alternate;
+}
+
+.pp-acct.is-err::after {
+  background: var(--danger);
+}
+
+@keyframes pp-pulse {
+  to {
+    opacity: 0.35;
+  }
+}
+
 .pp-head h1 {
   display: flex;
   align-items: center;
