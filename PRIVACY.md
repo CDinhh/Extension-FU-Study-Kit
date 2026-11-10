@@ -64,7 +64,7 @@ làm bản sao lưu; bạn có thể xoá bằng cách xoá dữ liệu trang we
 
 ### Liên hệ
 
-Mở issue tại https://github.com/CDinhh/Extension-Fuoverflow-test-checklist/issues
+Mở issue tại https://github.com/CDinhh/Extension-FU-Study-Kit/issues
 
 ---
 
@@ -125,4 +125,4 @@ backup; clear the forum's site data in your browser to remove it.
 
 ### Contact
 
-Open an issue at https://github.com/CDinhh/Extension-Fuoverflow-test-checklist/issues
+Open an issue at https://github.com/CDinhh/Extension-FU-Study-Kit/issues

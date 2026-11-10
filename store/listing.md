@@ -81,7 +81,7 @@ No. All code is packaged in the extension.
 
 ## Privacy policy URL
 
-https://github.com/CDinhh/Extension-Fuoverflow-test-checklist/blob/main/PRIVACY.md
+https://github.com/CDinhh/Extension-FU-Study-Kit/blob/main/PRIVACY.md
 
 ## Screenshots (1280×800)
 
