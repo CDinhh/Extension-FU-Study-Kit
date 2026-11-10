@@ -1,5 +1,7 @@
 # FU Study Kit: Exam Checklist & FAP Timetable
 
+**Tiếng Việt** · [English](README.en.md)
+
 Extension trình duyệt (Manifest V3) cho hai diễn đàn [FuOverflow](https://fuoverflow.com) và
 [FuExam](https://fuexam.me), giúp bạn theo dõi việc ôn đề thi và xem lịch học FAP:
 
