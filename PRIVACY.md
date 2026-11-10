@@ -36,7 +36,7 @@ Các công tắc ẩn banner/popup của diễn đàn được lưu trong `chrom
 
 **Thời khóa biểu FAP (tuỳ chọn, tắt mặc định):** khi bạn bấm "Bật thời khóa biểu", extension mở trang
 `fap.fpt.edu.vn/WeeklyTimetable` trong một tab bằng phiên đăng nhập sẵn có của bạn, đọc bảng lịch
-tuần (môn, giờ, phòng, giảng viên, điểm danh, link học online) rồi đóng tab. Lịch chỉ được lưu trong
+của các tuần trong kỳ (môn, giờ, phòng, giảng viên, điểm danh, link học online) rồi đóng tab. Lịch chỉ được lưu trong
 `chrome.storage.local` trên máy bạn, không đồng bộ, không nằm trong file xuất và không gửi đi đâu.
 Extension không đọc mật khẩu, cookie hay trang FAP nào khác; nếu FAP đòi đăng nhập, bạn tự đăng nhập
 trong tab đó.
@@ -96,8 +96,8 @@ The capture speed and the answer-cover positions are kept in the forum page's `l
 The switches that hide the forums' banner/popup are kept in `chrome.storage.local`.
 
 **FAP timetable (optional, off by default):** when you press "Bật thời khóa biểu", the extension
-opens `fap.fpt.edu.vn/WeeklyTimetable` in a tab using your existing session, reads the weekly table
-(class, time, room, lecturer, attendance, online-class link) and closes the tab. The timetable is
+opens `fap.fpt.edu.vn/WeeklyTimetable` in a tab using your existing session, reads the weekly tables
+of the term (class, time, room, lecturer, attendance, online-class link) and closes the tab. The timetable is
 kept only in `chrome.storage.local` on your device; it is not synced, not included in exports and
 never sent anywhere. The extension does not read passwords, cookies or any other FAP page; if FAP
 asks you to sign in, you do that yourself in that tab.

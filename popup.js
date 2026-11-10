@@ -82,15 +82,26 @@
   const TT_STALE_MS = 60 * 60 * 1000;
   let ttAsked = false;
 
-  const ttSync = (focus) => chrome.runtime.sendMessage({ action: "fapSync", focus }).catch(() => {});
+  const ttSync = (focus, full) => chrome.runtime.sendMessage({ action: "fapSync", focus, full }).catch(() => {});
 
-  // Monday-first index of today, or -1 when the cached week is not the current one.
-  const ttTodayIndex = (days) => {
-    const now = new Date();
-    const i = (now.getDay() + 6) % 7;
-    const m = /(\d{1,2})\/(\d{1,2})/.exec(days[i] || "");
-    return m && +m[1] === now.getDate() && +m[2] === now.getMonth() + 1 ? i : -1;
+  // Weeks are stored under their Monday as yyyy-mm-dd, the same key background.js writes.
+  const ttKey = (date) => {
+    const p = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
   };
+  const ttThisWeek = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return ttKey(d);
+  };
+  const ttWeekLabel = (key) => {
+    const [y, m, d] = key.split("-").map(Number);
+    const end = new Date(y, m - 1, d + 6);
+    const p = (n) => String(n).padStart(2, "0");
+    return `${p(d)}/${p(m)} – ${p(end.getDate())}/${p(end.getMonth() + 1)}`;
+  };
+  let ttView = ""; // week on screen
+  let ttKeys = []; // every cached week plus the current one, oldest first
 
   const ttClock = (ms) => {
     const at = new Date(ms);
@@ -109,12 +120,11 @@
 
   // One line that always says how fresh the table is and what the sync is doing.
   const ttStatus = (data, sync) => {
-    const saved = data ? ` · bản lưu ${ttClock(data.fetchedAt)}` : "";
-    if (sync?.state === "attention") return ["warn", `Chờ đăng nhập FAP${saved}`];
-    if (sync) return ["busy", `Đang đồng bộ…${saved}`];
-    if (!data) return ["warn", "Chưa có lịch"];
-    const stale = Date.now() - data.fetchedAt > TT_STALE_MS;
-    return [stale ? "warn" : "ok", `Cập nhật ${ttAgo(data.fetchedAt)} · ${ttClock(data.fetchedAt)}`];
+    const at = data?.fetchedAt;
+    if (sync?.state === "attention") return ["warn", "Chờ đăng nhập FAP", "Đăng nhập ở tab FAP vừa mở, lịch sẽ tự cập nhật"];
+    if (sync) return ["busy", `Đang đồng bộ… ${sync.count || 0} tuần`, ""];
+    if (!at) return ["warn", "Chưa có lịch", ""];
+    return [Date.now() - at > TT_STALE_MS ? "warn" : "ok", `Cập nhật ${ttAgo(at)}`, `Cập nhật lúc ${ttClock(at)} · đã lưu ${Object.keys(data.weeks).length} tuần`];
   };
 
   const ttCell = (item, rowTime) => {
@@ -124,11 +134,11 @@
     cell.append(el("strong", "", code));
     if (group) cell.append(el("span", "", group));
     if (item.time && item.time !== rowTime) cell.append(el("span", "pp-tt__time", item.time));
-    if (item.room) cell.append(el("span", "", item.room));
-    if (item.teacher) cell.append(el("span", "", item.teacher));
+    // FAP prints "-" for a room or lecturer it does not have (exam weeks).
+    for (const value of [item.room, item.teacher]) if (value && value !== "-") cell.append(el("span", "", value));
     if (item.online) {
       // The link comes from the FAP page, so only ever follow https.
-      const meet = item.meet.startsWith("https://") ? el("a", "pp-tt__tag", "Online ↗") : el("span", "pp-tt__tag", "Online");
+      const meet = item.meet.startsWith("https://") ? el("a", "pp-tt__tag", "Online") : el("span", "pp-tt__tag", "Online");
       if (meet.tagName === "A") Object.assign(meet, { href: item.meet, target: "_blank", rel: "noopener" });
       cell.append(meet);
     }
@@ -178,14 +188,22 @@
       chrome.storage.session.get("fapSync")
     ]);
     const enabled = granted && !!local.prefs?.timetable;
-    const data = local.fapTimetable;
+    const data = local.fapTimetable?.weeks ? local.fapTimetable : null; // an older single-week cache is refetched
     const sync = session.fapSync;
-    const today = data ? ttTodayIndex(data.days) : -1;
+    const thisWeek = ttThisWeek();
+    ttKeys = [...new Set([...Object.keys(data?.weeks || {}), thisWeek])].sort();
+    if (!ttKeys.includes(ttView)) ttView = thisWeek;
+    const week = data?.weeks[ttView];
+    const today = ttView === thisWeek ? (new Date().getDay() + 6) % 7 : -1;
     const body = $("ttBody");
     const status = $("ttStatus");
     body.replaceChildren();
-    $("ttRefresh").hidden = status.hidden = !enabled;
+    $("ttRefresh").hidden = status.hidden = $("ttNav").hidden = !enabled;
     $("ttRefresh").classList.toggle("is-busy", !!sync);
+    $("ttPrev").disabled = ttView === ttKeys[0];
+    $("ttNext").disabled = ttView === ttKeys[ttKeys.length - 1];
+    $("ttWeek").textContent = ttWeekLabel(ttView);
+    $("ttWeek").classList.toggle("is-current", ttView === thisWeek);
 
     if (!enabled) {
       body.append(el("p", "pp-tt__note", "Xem lịch học FAP ngay tại đây."));
@@ -198,16 +216,18 @@
       return;
     }
 
-    if (!ttAsked && !sync && (!data || today < 0 || Date.now() - data.fetchedAt > TT_STALE_MS)) {
+    if (!ttAsked && !sync && (!data?.weeks[thisWeek] || Date.now() - data.fetchedAt > TT_STALE_MS)) {
       ttAsked = true;
-      ttSync(false);
+      // Past weeks only change in attendance, so they are walked once, then on manual refresh.
+      ttSync(false, !ttKeys.some((key) => key < thisWeek));
     }
 
-    const [tone, text] = ttStatus(data, sync);
+    const [tone, text, hint] = ttStatus(data, sync);
     status.className = `pp-tt__status is-${tone}`;
     status.textContent = text;
-    if (!data) return;
-    body.append(data.items.length ? ttTable(data, today) : el("p", "pp-tt__note", "Tuần này không có lớp."));
+    status.title = hint;
+    if (!week) return body.append(el("p", "pp-tt__note", sync ? "Đang lấy lịch…" : "Chưa có lịch tuần này."));
+    body.append(week.items.length ? ttTable(week, today) : el("p", "pp-tt__note", "Không có lớp."));
   };
 
   async function enableTimetable() {
@@ -222,7 +242,14 @@
     renderTimetable();
   }
 
-  $("ttRefresh").addEventListener("click", () => ttSync(true));
+  $("ttRefresh").addEventListener("click", () => ttSync(true, true));
+  const ttStep = (by) => {
+    ttView = by ? ttKeys[ttKeys.indexOf(ttView) + by] || ttView : ttThisWeek();
+    renderTimetable();
+  };
+  $("ttPrev").addEventListener("click", () => ttStep(-1));
+  $("ttNext").addEventListener("click", () => ttStep(1));
+  $("ttWeek").addEventListener("click", () => ttStep(0));
   setInterval(() => renderTimetable(), 60000); // keeps "N phút trước" honest while the popup stays open
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.fapTimetable || changes.fapSync) renderTimetable();
