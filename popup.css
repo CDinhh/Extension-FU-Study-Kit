@@ -47,19 +47,20 @@
 }
 
 :root {
-  --bg: #050505;
-  --core: #0c0d0f;
-  --hair: rgba(255, 255, 255, 0.08);
-  --hair-strong: rgba(255, 255, 255, 0.14);
-  --text: #ededed;
-  --muted: rgba(237, 237, 237, 0.55);
-  --done: #34d399;
-  --study: #60a5fa;
-  --flag: #fbbf24;
-  --danger: #f87171;
+  --bg: #0b0c0f;
+  --card: #121419;
+  --cell: #191c22;
+  --hair: rgba(255, 255, 255, 0.07);
+  --hair-strong: rgba(255, 255, 255, 0.13);
+  --text: #e9ebef;
+  --muted: rgba(233, 235, 239, 0.52);
+  --accent: #6ea8fe;
+  --exam: #f5a524;
+  --done: #3ecf8e;
+  --danger: #f06a6a;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --r-shell: 14px;
-  --pad-shell: 5px;
+  --r: 10px;
+  --r-sm: 6px;
   color-scheme: dark;
 }
 
@@ -73,99 +74,81 @@ body {
 }
 
 body {
-  width: 368px;
+  width: 580px;
   background: var(--bg);
   color: var(--text);
   font: 400 13px/1.5 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Ambient mesh: two soft orbs behind everything. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(260px 200px at 12% -4%, rgba(96, 165, 250, 0.18), transparent 70%),
-    radial-gradient(240px 220px at 108% 38%, rgba(129, 140, 248, 0.12), transparent 70%);
-}
-
 .pp {
-  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 18px 14px;
-}
-
-/* --- Header --- */
-.pp-eyebrow {
-  display: inline-block;
-  padding: 3px 10px;
-  border: 1px solid var(--hair);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  gap: 8px;
+  padding: 12px 14px 10px;
 }
 
 .pp-head h1 {
-  margin: 8px 0 2px;
-  font-size: 22px;
+  margin: 0 2px 2px;
+  font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
-.pp-sub {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-/* --- Double-bezel card --- */
+/* --- Card: one flat surface with a hairline edge and a faint top light --- */
 .pp-card {
-  padding: var(--pad-shell);
   border: 1px solid var(--hair);
-  border-radius: var(--r-shell);
-  background: rgba(255, 255, 255, 0.025);
-  box-shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.6);
+  border-radius: var(--r);
+  background: var(--card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: pp-rise 500ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
 }
 
 .pp-card__core {
-  padding: 12px 14px;
-  border-radius: calc(var(--r-shell) - var(--pad-shell));
-  background: var(--core);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.07);
+  padding: 10px 12px;
 }
 
-/* --- Site stats --- */
+/* --- Revision progress: one row per forum --- */
 .pp-sites {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  padding-block: 2px;
 }
 
 .pp-site {
-  animation: pp-rise 700ms var(--ease) both;
-  animation-delay: calc(var(--i, 0) * 80ms + 60ms);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
 }
 
-.pp-site__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 8px;
+.pp-site + .pp-site {
+  border-top: 1px solid var(--hair);
 }
 
 .pp-site__name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+.pp-site > .pp-site__name {
+  width: 84px;
+  color: var(--text);
+  text-decoration: none;
+  transition: color 300ms var(--ease);
+}
+
+.pp-site > .pp-site__name:hover {
+  color: var(--accent);
+}
+
+.pp-site > .pp-site__name:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.6);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 .pp-site__host {
@@ -173,87 +156,180 @@ body::before {
   font-size: 11px;
 }
 
-.pp-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin: 0;
+.pp-site {
+  flex-wrap: wrap;
 }
 
-.pp-stats > div {
+/* Studied subjects: a chip per course, the open one lists its tests below the row. */
+.pp-chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.pp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-sm);
+  background: var(--cell);
+  color: var(--text);
+  font: 600 11.5px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    border-color 250ms var(--ease),
+    background-color 250ms var(--ease),
+    transform 300ms var(--ease);
+}
+
+.pp-chip:hover {
+  border-color: rgba(110, 168, 254, 0.45);
+}
+
+.pp-chip:active {
+  transform: scale(0.97);
+}
+
+.pp-chip:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.6);
+  outline-offset: 1px;
+}
+
+.pp-chip[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: rgba(110, 168, 254, 0.12);
+}
+
+.pp-chip--more {
+  padding: 0 8px;
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+}
+
+.pp-chip__n {
+  min-width: 16px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pp-subj {
+  flex-basis: 100%;
+  padding: 8px 10px 6px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  background: var(--cell);
+  animation: pp-rise 350ms var(--ease) both;
+}
+
+.pp-subj__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.pp-subj__name {
+  font-weight: 600;
+}
+
+.pp-subj__open {
+  color: var(--accent);
+  font-size: 11.5px;
+  text-decoration: none;
+}
+
+.pp-subj__open:hover {
+  text-decoration: underline;
+}
+
+.pp-subj__list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.025);
+  max-height: 168px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
 }
 
-.pp-stats dd {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+.pp-test {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 6px;
+  margin-inline: -6px;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  text-decoration: none;
+  transition: background-color 200ms var(--ease);
+}
+
+.pp-test:hover,
+.pp-test:focus-visible {
+  background: rgba(255, 255, 255, 0.05);
+  outline: none;
+}
+
+.pp-test__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-test__flag {
+  color: var(--exam);
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
-.pp-stats dt {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.pp-test__state {
   color: var(--muted);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
-.pp-stats dt::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+.pp-test__state.is-done {
+  color: var(--done);
 }
 
-.pp-stats .is-done dt::before {
-  background: var(--done);
-}
-
-.pp-stats .is-study dt::before {
-  background: var(--study);
-}
-
-.pp-stats .is-flag dt::before {
-  background: var(--flag);
-}
-
-/* --- Pill buttons with the nested icon island --- */
-.pp-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
+/* --- Buttons with the nested icon island --- */
 .pp-btn {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  min-height: 42px;
-  padding: 5px 5px 5px 16px;
+  min-height: 36px;
+  padding: 3px 3px 3px 14px;
   border: 1px solid var(--hair-strong);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  background: var(--card);
   color: var(--text);
-  font: 500 13px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  font: 500 12.5px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
   cursor: pointer;
   transition:
-    transform 500ms var(--ease),
-    background-color 500ms var(--ease),
-    border-color 500ms var(--ease);
+    transform 400ms var(--ease),
+    background-color 400ms var(--ease),
+    border-color 400ms var(--ease);
 }
 
 .pp-btn:hover {
   border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--cell);
 }
 
 .pp-btn:active {
@@ -261,42 +337,41 @@ body::before {
 }
 
 .pp-btn:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.6);
+  outline: 2px solid rgba(110, 168, 254, 0.6);
   outline-offset: 2px;
 }
 
 .pp-btn__icon {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.08);
-  transition: transform 500ms var(--ease);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  transition: transform 400ms var(--ease);
 }
 
 .pp-btn:hover .pp-btn__icon {
-  transform: translate(2px, -1px) scale(1.05);
+  transform: translate(1px, -1px);
 }
 
 .pp-btn--primary {
-  border-color: rgba(96, 165, 250, 0.35);
-  background: rgba(96, 165, 250, 0.12);
-  color: #dbeafe;
+  border-color: rgba(110, 168, 254, 0.4);
+  color: #dce9ff;
 }
 
 .pp-btn--primary:hover {
-  border-color: rgba(96, 165, 250, 0.55);
-  background: rgba(96, 165, 250, 0.18);
+  border-color: rgba(110, 168, 254, 0.65);
+  background: rgba(110, 168, 254, 0.08);
 }
 
 .pp-btn--primary .pp-btn__icon {
-  background: rgba(96, 165, 250, 0.22);
-  color: var(--study);
+  background: rgba(110, 168, 254, 0.16);
+  color: var(--accent);
 }
 
 .pp-btn--ghost {
-  padding-right: 16px;
+  padding-right: 14px;
   border-color: transparent;
   background: transparent;
 }
@@ -312,8 +387,8 @@ body::before {
 }
 
 svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.4;
@@ -322,22 +397,29 @@ svg {
 }
 
 /* --- Messages --- */
-.pp-msg {
-  margin: -6px 0 0;
-  padding: 9px 14px;
-  border-radius: 10px;
+.pp-msg,
+.pp-warn {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
   font-size: 12px;
-  animation: pp-rise 500ms var(--ease) both;
+  animation: pp-rise 400ms var(--ease) both;
 }
 
 .pp-msg.is-ok {
-  background: rgba(96, 165, 250, 0.1);
-  color: #bfdbfe;
+  background: rgba(110, 168, 254, 0.08);
+  color: #cfe0ff;
 }
 
 .pp-msg.is-err {
-  background: rgba(248, 113, 113, 0.1);
+  background: rgba(240, 106, 106, 0.1);
   color: #fecaca;
+}
+
+.pp-warn {
+  background: rgba(245, 165, 36, 0.08);
+  color: #fcd9a0;
 }
 
 .pp-perm__text {
@@ -351,57 +433,58 @@ svg {
   font-weight: 500;
 }
 
-.pp-sync {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.pp-sync svg {
-  flex: none;
-  color: var(--study);
-}
-
-.pp-sync p {
-  margin: 0;
-}
-
-.pp-warn {
-  margin: -10px 0 0;
-  padding: 9px 14px;
-  border-radius: 10px;
-  background: rgba(251, 191, 36, 0.1);
-  color: #fde68a;
-  font-size: 12px;
-}
-
 .pp-foot {
-  padding-top: 12px;
-  border-top: 1px solid var(--hair);
+  padding: 2px 2px 0;
   color: var(--muted);
   font-size: 11px;
 }
 
-.pp-foot__ver {
-  margin-left: auto;
-}
-
 .pp-foot nav {
   display: flex;
+  align-items: center;
   gap: 14px;
 }
 
-.pp-foot a {
+.pp-foot__link,
+.pp-foot__gh {
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--text);
+  font: inherit;
   text-decoration: none;
-  opacity: 0.8;
-  transition: opacity 400ms var(--ease);
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 300ms var(--ease);
 }
 
-.pp-foot a:hover {
+.pp-foot__link:hover,
+.pp-foot__gh:hover {
   opacity: 1;
+}
+
+.pp-foot__link:focus-visible,
+.pp-foot__gh:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.6);
+  outline-offset: 2px;
+  border-radius: 3px;
+  opacity: 1;
+}
+
+.pp-foot__gh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.pp-foot__gh img {
+  border: 1px solid var(--hair-strong);
+  border-radius: 50%;
+}
+
+.pp-foot__ver {
+  opacity: 0.6;
 }
 
 [hidden] {
@@ -415,10 +498,11 @@ svg {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(5, 5, 5, 0.6);
-  backdrop-filter: blur(14px);
+  background: rgba(5, 6, 8, 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   opacity: 0;
-  transition: opacity 260ms var(--ease);
+  transition: opacity 240ms var(--ease);
 }
 
 .pp-modal.is-open {
@@ -428,18 +512,22 @@ svg {
 .pp-modal__card {
   width: 100%;
   max-width: 340px;
-  background: rgba(20, 20, 22, 0.9);
-  transform: scale(0.96) translateY(8px);
-  transition: transform 420ms var(--ease);
+  transform: scale(0.97) translateY(6px);
+  animation: none;
+  transition: transform 380ms var(--ease);
 }
 
 .pp-modal.is-open .pp-modal__card {
   transform: none;
 }
 
+.pp-modal__card .pp-card__core {
+  padding: 14px;
+}
+
 .pp-modal h2 {
   margin: 0 0 4px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -453,7 +541,7 @@ svg {
 .pp-modal__list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -463,9 +551,9 @@ svg {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: var(--cell);
 }
 
 .pp-modal__site {
@@ -483,28 +571,40 @@ svg {
 }
 
 .pp-modal__count.is-upd {
-  color: var(--study);
+  color: var(--accent);
 }
 
 .pp-modal__actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .pp-modal__actions .pp-btn {
-  padding: 5px 18px;
+  padding: 5px 16px;
 }
 
 @keyframes pp-rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes pp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pp-pulse {
+  to {
+    opacity: 0.3;
   }
 }
 
@@ -520,6 +620,7 @@ svg {
 /* --- Per-site clean-up switch --- */
 .pp-switch {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 8px;
   color: var(--muted);
@@ -532,15 +633,15 @@ svg {
   position: relative;
   flex: none;
   width: 30px;
-  height: 18px;
+  height: 17px;
   margin: 0;
   border: 1px solid var(--hair-strong);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+  background: var(--cell);
   cursor: pointer;
   transition:
-    background-color 400ms var(--ease),
-    border-color 400ms var(--ease);
+    background-color 300ms var(--ease),
+    border-color 300ms var(--ease);
 }
 
 .pp-switch input::after {
@@ -548,24 +649,351 @@ svg {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 4px;
-  background: rgba(237, 237, 237, 0.7);
-  transition: transform 450ms var(--ease);
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: rgba(233, 235, 239, 0.6);
+  transition: transform 350ms var(--ease);
 }
 
 .pp-switch input:checked {
-  border-color: rgba(96, 165, 250, 0.6);
-  background: rgba(96, 165, 250, 0.35);
+  border-color: rgba(110, 168, 254, 0.7);
+  background: rgba(110, 168, 254, 0.3);
 }
 
 .pp-switch input:checked::after {
   background: #fff;
-  transform: translateX(12px);
+  transform: translateX(13px);
 }
 
 .pp-switch input:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.6);
+  outline: 2px solid rgba(110, 168, 254, 0.6);
   outline-offset: 2px;
+}
+
+/* --- FAP timetable --- */
+.pp-tt__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pp-tt__titles {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pp-tt__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pp-tt__status::before {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--done);
+}
+
+.pp-tt__status.is-warn::before {
+  background: var(--exam);
+}
+
+.pp-tt__status.is-busy::before {
+  background: var(--accent);
+  animation: pp-pulse 900ms var(--ease) infinite alternate;
+}
+
+/* Week switcher: prev, the week on screen, next. */
+.pp-tt__nav {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid var(--hair-strong);
+  border-radius: 7px;
+}
+
+.pp-tt__step,
+.pp-tt__week {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: 500 11px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  transition:
+    transform 400ms var(--ease),
+    background-color 300ms var(--ease),
+    opacity 300ms var(--ease);
+}
+
+.pp-tt__step {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 5px;
+}
+
+.pp-tt__step:hover:not(:disabled),
+.pp-tt__week:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.pp-tt__step:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.pp-tt__step:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.pp-tt__week {
+  min-width: 92px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pp-tt__week.is-current {
+  color: var(--text);
+}
+
+.pp-tt__step:focus-visible,
+.pp-tt__week:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.6);
+  outline-offset: 1px;
+}
+
+.pp-tt__refresh {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--hair-strong);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    color 300ms var(--ease),
+    background-color 300ms var(--ease),
+    border-color 300ms var(--ease);
+}
+
+.pp-tt__refresh:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.pp-tt__refresh:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.6);
+  outline-offset: 2px;
+}
+
+.pp-tt__refresh.is-busy {
+  color: var(--accent);
+}
+
+.pp-tt__refresh.is-busy svg {
+  animation: pp-spin 1.1s linear infinite;
+}
+
+.pp-tt__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pp-tt__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pp-tt__enable {
+  align-self: flex-start;
+  padding-right: 14px;
+}
+
+.pp-tt__table {
+  width: calc(100% + 6px);
+  margin: -3px;
+  border-spacing: 3px;
+  table-layout: fixed;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.pp-tt__table th {
+  padding: 3px 2px 5px;
+  color: var(--muted);
+  font-weight: 500;
+  text-align: center;
+}
+
+.pp-tt__table th:first-child {
+  width: 42px;
+}
+
+.pp-tt__table th span {
+  display: block;
+}
+
+/* Today: an accent rule under the day name, and a faint tint down the column. */
+.pp-tt__table thead .is-today {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.pp-tt__table thead .is-today .pp-tt__dayname,
+.pp-tt__table thead .is-today .pp-tt__date {
+  color: var(--accent);
+}
+
+.pp-tt__table td {
+  padding: 0;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.018);
+  vertical-align: top;
+}
+
+.pp-tt__table td.is-today {
+  background: rgba(110, 168, 254, 0.05);
+}
+
+.pp-tt__table .is-past {
+  opacity: 0.42;
+}
+
+.pp-tt__dayname {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pp-tt__slot {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pp-tt__table th .pp-tt__time {
+  color: var(--muted);
+}
+
+.pp-tt__time {
+  font-variant-numeric: tabular-nums;
+}
+
+.pp-tt__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 5px 6px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  background: var(--cell);
+  color: var(--muted);
+  transition: border-color 300ms var(--ease);
+}
+
+.pp-tt__cell:hover {
+  border-color: var(--hair-strong);
+}
+
+.pp-tt__table td.is-today .pp-tt__cell {
+  border-color: rgba(110, 168, 254, 0.35);
+}
+
+.pp-tt__cell + .pp-tt__cell {
+  margin-top: 3px;
+}
+
+/* Long class and lecturer names are cut; the cell tooltip has them in full. */
+.pp-tt__cell > * {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-tt__cell strong {
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.pp-tt__cell .pp-tt__time {
+  color: var(--text);
+}
+
+/* Exams are the one thing that must stand out: amber edge, tint and label. */
+.pp-tt__cell.is-exam,
+.pp-tt__table td.is-today .pp-tt__cell.is-exam {
+  border-color: rgba(245, 165, 36, 0.55);
+  background: rgba(245, 165, 36, 0.1);
+  box-shadow: inset 2px 0 0 var(--exam);
+}
+
+.pp-tt__kind {
+  align-self: flex-start;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.is-exam .pp-tt__kind {
+  color: var(--exam);
+}
+
+/* Attendance dot: green attended, red absent. */
+.pp-tt__cell.is-yes::after,
+.pp-tt__cell.is-no::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--done);
+}
+
+.pp-tt__cell.is-no::after {
+  background: var(--danger);
+}
+
+.pp-tt__tag {
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 0 5px;
+  border: 1px solid rgba(110, 168, 254, 0.4);
+  border-radius: 4px;
+  color: var(--accent);
+  text-decoration: none;
+  transition: background-color 300ms var(--ease);
+}
+
+a.pp-tt__tag:hover {
+  background: rgba(110, 168, 254, 0.12);
 }

@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Exam Checklist for FuOverflow & FuExam",
+  "name": "FU Study Kit: Exam Checklist & FAP Timetable",
   "version": "2.0.0",
-  "description": "Tick exam threads you have reviewed on FuOverflow and FuExam, resume questions, flag unsure ones. Not official.",
+  "description": "Track exam revision on FuOverflow and FuExam, flag unsure questions, and see your FAP weekly timetable in the popup. Not official.",
   "permissions": [
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "*://fuoverflow.com/*",

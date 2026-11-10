@@ -181,3 +181,23 @@ test("sync items round-trip with every item under 7500 bytes", () => {
   }
   assert.deepEqual(C.fromSyncItems(items).fuexam, s);
 });
+
+test("studiedBySubject groups touched threads by course code, newest first", () => {
+  const s = site({
+    checklist: { 1: { done: true, at: 100 }, 2: { done: false, at: 900 } },
+    progress: { 3: { current: 4, total: 50, at: 300 }, 4: { current: null, total: null, removed: true, at: 400 } },
+    flags: { 5: { 2: { on: true, at: 200 } }, 6: { 1: { on: false, at: 500 } } }
+  });
+  const meta = {
+    1: { title: "MLN122 - Q2 - 6", subject: "MLN122", subjectUrl: "https://fuoverflow.com/forums/MLN122/" },
+    3: { title: "SDN302 SP25 PE", subject: "SDN302 - Server-side" },
+    5: { title: "Đề MLN122 FE" }
+  };
+  const groups = C.studiedBySubject(s, meta);
+  assert.deepEqual(groups.map((g) => g.subject), ["SDN302", "MLN122"]);
+  assert.deepEqual(groups[1].tests.map((t) => t.tid), ["5", "1"]);
+  assert.equal(groups[1].url, "https://fuoverflow.com/forums/MLN122/");
+  assert.deepEqual(groups[0].tests[0], { tid: "3", title: "SDN302 SP25 PE", done: false, current: 4, total: 50, flags: 0, at: 300 });
+  assert.equal(groups[1].tests[0].flags, 1);
+  assert.deepEqual(C.studiedBySubject(site({ checklist: { 9: { done: true, at: 1 } } }))[0].subject, "Khác");
+});

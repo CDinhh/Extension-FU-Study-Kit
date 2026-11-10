@@ -1,15 +1,18 @@
-# Exam Checklist for FuOverflow & FuExam
+# FU Study Kit: Exam Checklist & FAP Timetable
+
+**Tiếng Việt** · [English](README.en.md)
 
 Extension trình duyệt (Manifest V3) cho hai diễn đàn [FuOverflow](https://fuoverflow.com) và
-[FuExam](https://fuexam.me), giúp bạn theo dõi việc ôn đề thi:
+[FuExam](https://fuexam.me), giúp bạn theo dõi việc ôn đề thi và xem lịch học FAP:
 
 - đánh dấu những đề đã ôn xong ngay trên danh sách thread hoặc ngay trong đề;
 - theo dõi đề đang học và câu đang làm dở ngay trên danh sách đề;
 - nhảy nhanh tới câu bất kỳ khi xem ảnh đề, gắn cờ những câu chưa chắc;
 - **chụp màn hình tự động toàn bộ câu hỏi kèm khung chat thảo luận đáp án** (nén sẵn file ZIP);
+- **xem thời khóa biểu tuần của FAP ngay trong popup** (tuỳ chọn, tự cập nhật, luôn ghi rõ lần cập nhật gần nhất);
 - mang dữ liệu sang máy khác bằng **Xuất/Nhập file**, hoặc tự đồng bộ qua **Chrome Sync**.
 
-> Không phải extension chính thức của FuOverflow / FuExam.
+> Không phải extension chính thức của FuOverflow / FuExam / Đại học FPT.
 
 ![Danh sách đề](store/screenshots/01-list.png)
 
@@ -51,16 +54,35 @@ Khi mở ảnh đề, cột bên phải có panel điều khiển:
 **Lần đầu chụp** trình duyệt cần quyền chụp tab: bấm icon extension trên thanh công cụ →
 **"Cho phép"**. Extension chỉ chụp khi bạn bấm nút chụp.
 
-### Popup: thống kê, Xuất/Nhập, đồng bộ
+### Thời khóa biểu FAP trong popup
 
-Bấm icon extension để xem số đề đã ôn / đang học / câu gắn cờ của từng diễn đàn.
+- Mặc định tắt. Bấm **Bật thời khóa biểu** trong popup, trình duyệt sẽ xin quyền truy cập `fap.fpt.edu.vn`.
+- Extension mở trang WeeklyTimetable trong một tab nền bằng phiên đăng nhập sẵn có của bạn, đọc lịch
+  của tất cả các tuần (cả tuần cũ lẫn tuần sau), lưu trên máy và hiện dạng bảng.
+- Dùng nút `‹` `›` để chuyển tuần, bấm vào ngày tháng để về tuần này. **Lịch thi** được tô màu riêng.
+- Dòng trạng thái luôn ghi lần cập nhật gần nhất. Mở popup mà lịch đã cũ hơn 1 giờ thì lịch tự làm mới, hoặc bấm nút làm mới.
+- Hết phiên FAP thì extension mở tab FAP để bạn đăng nhập (cách nào cũng được), xong lịch tự cập nhật.
+
+### Popup: môn đã ôn, Xuất/Nhập, đồng bộ
+
+Bấm icon extension để xem các môn đã ôn trên từng diễn đàn, môn ôn gần nhất đứng đầu.
+
+- Mỗi môn là một chip kèm số đề. Bấm chip để mở danh sách đề của môn đó, với trạng thái **Đã ôn**,
+  **Câu x/N** hoặc **Đang học** và số câu gắn cờ. Bấm tên đề để mở thẳng đề, **Mở môn ↗** để mở trang môn.
+- Từ 7 môn trở lên, các môn cũ được gom vào chip `+N`.
+- Tên đề và tên môn được ghi lại khi bạn mở đề hoặc trang môn. Đề ôn từ trước khi cập nhật, hoặc từ máy
+  khác, tạm hiện là "Đề #id" trong nhóm "Khác" cho tới khi bạn mở lại.
+- Bấm tên diễn đàn để mở trang chủ diễn đàn đó.
+
+Ở chân popup:
 
 - **Xuất dữ liệu**: tải về `fu-exam-checklist-YYYY-MM-DD.json`.
 - **Nhập dữ liệu**: chọn file đã xuất ở máy khác. Dữ liệu được **gộp** (bản mới hơn được giữ, không xoá
   gì), có bước xác nhận cho biết bao nhiêu đề được thêm / cập nhật. File sai định dạng bị từ chối.
-- **Công tắc dọn trang** (mặc định tắt): "Ẩn banner Donate" ở thẻ FuExam (banner nổi dưới đáy màn
-  hình) và "Ẩn popup cộng đồng" ở thẻ FuOverflow (hộp "Tham gia cộng đồng FuOverflow", được tự đóng
-  bằng nút đóng của chính trang). Bật/tắt có tác dụng ngay, không cần F5.
+- **Công tắc dọn trang** (mặc định tắt, nằm cạnh tên diễn đàn): "Ẩn Donate" của FuExam (banner nổi
+  dưới đáy màn hình) và "Ẩn popup" của FuOverflow (hộp "Tham gia cộng đồng FuOverflow" và popup quảng
+  cáo "Công cụ hỗ trợ học tập", được tự đóng bằng nút đóng của chính trang). Bật/tắt có tác dụng ngay,
+  không cần F5.
 - **Chrome**: nếu đăng nhập Chrome và bật Sync, dữ liệu tự đồng bộ giữa các máy.
   **Brave**: không đồng bộ được, dùng Xuất/Nhập file.
 
