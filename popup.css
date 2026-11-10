@@ -83,17 +83,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Ambient mesh: three slow orbs behind the glass. Fixed, so the blur never repaints on scroll. */
+/* Plain graphite backdrop: one quiet top light, no colour. The glass reads from its own edges. */
 body::before {
   content: "";
   position: fixed;
-  inset: -12%;
+  inset: 0;
   pointer-events: none;
-  background:
-    radial-gradient(300px 240px at 14% 10%, rgba(96, 165, 250, 0.6), transparent 70%),
-    radial-gradient(280px 260px at 92% 34%, rgba(139, 92, 246, 0.5), transparent 70%),
-    radial-gradient(320px 250px at 34% 96%, rgba(16, 185, 129, 0.34), transparent 70%);
-  animation: pp-drift 18s var(--ease) infinite alternate;
+  background: linear-gradient(180deg, #161a22 0%, #0a0c11 45%, #06070a 100%);
 }
 
 .pp {
@@ -479,12 +475,6 @@ svg {
   to {
     opacity: 1;
     transform: none;
-  }
-}
-
-@keyframes pp-drift {
-  to {
-    transform: translate(3%, -2%) scale(1.08);
   }
 }
 
