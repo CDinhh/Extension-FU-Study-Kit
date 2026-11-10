@@ -5,7 +5,8 @@
   "description": "Track exam revision on FuOverflow and FuExam, flag unsure questions, and see your FAP weekly timetable in the popup. Not official.",
   "permissions": [
     "storage",
-    "scripting"
+    "scripting",
+    "identity"
   ],
   "host_permissions": [
     "*://fuoverflow.com/*",

@@ -199,3 +199,41 @@ test("studiedBySubject groups touched threads by course code, newest first", () 
   assert.equal(groups[1].tests[0].flags, 1);
   assert.deepEqual(C.studiedBySubject(site({ checklist: { 9: { done: true, at: 1 } } }))[0].subject, "Khác");
 });
+
+test("cleanCloud keeps checked fields and drops junk", () => {
+  const raw = {
+    app: "fu-exam-checklist",
+    sites: { fuexam: { checklist: { 7: { done: true, at: 5 } } }, fuoverflow: { checklist: { x: 1 } } },
+    threads: {
+      fuoverflow: { 12: { title: "MLN122 - Q2", subject: "MLN122", subjectUrl: "https://fuoverflow.com/forums/MLN122/" }, 13: { subjectUrl: "https://evil.com/" }, bad: {} }
+    },
+    fapTimetable: { fetchedAt: 10, weeks: { "2026-11-09": { days: ["Thứ 2"], items: [{ day: 9, title: "WDP301 - SE1924", online: "yes", evil: 1 }] }, nope: {} } },
+    fapAttendance: { fetchedAt: 11, term: "Fall2026", courses: [{ code: "WDP301", absent: 3, total: -1 }] }
+  };
+  const c = C.cleanCloud(raw);
+  assert.equal(C.isDone(c.sites.fuexam, "7"), true);
+  assert.deepEqual(c.sites.fuoverflow, C.emptySite()); // invalid site falls back to empty
+  assert.deepEqual(c.threads.fuoverflow["12"].subjectUrl, "https://fuoverflow.com/forums/MLN122/");
+  assert.equal("subjectUrl" in c.threads.fuoverflow["13"], false);
+  assert.equal("bad" in c.threads.fuoverflow, false);
+  assert.deepEqual(Object.keys(c.fapTimetable.weeks), ["2026-11-09"]);
+  const item = c.fapTimetable.weeks["2026-11-09"].items[0];
+  assert.equal(item.day, 0);
+  assert.equal(item.online, false);
+  assert.equal("evil" in item, false);
+  assert.deepEqual(c.fapAttendance.courses[0].total, 0);
+  assert.deepEqual(C.cleanCloud({ app: "other" }).fapTimetable, null);
+});
+
+test("mergeCloud: newer study entry wins, titles fill gaps, newer crawl wins", () => {
+  const empty = { sites: {}, threads: {}, fapTimetable: null, fapAttendance: null };
+  const local = { ...empty, sites: { fuexam: site({ checklist: { 1: { done: true, at: 10 } } }) }, threads: { fuexam: { 1: { title: "A" } } }, fapTimetable: { fetchedAt: 5, weeks: {} } };
+  const remote = { ...empty, sites: { fuexam: site({ checklist: { 1: { done: false, at: 20 }, 2: { done: true, at: 1 } } }) }, threads: { fuexam: { 1: { title: "old", subject: "SDN302" }, 2: { title: "B" } } }, fapTimetable: { fetchedAt: 9, weeks: { k: 1 } }, fapAttendance: { fetchedAt: 1, courses: [] } };
+  const m = C.mergeCloud(local, remote);
+  assert.equal(C.isDone(m.sites.fuexam, "1"), false);
+  assert.equal(C.isDone(m.sites.fuexam, "2"), true);
+  assert.deepEqual(m.sites.fuoverflow, C.emptySite());
+  assert.deepEqual(m.threads.fuexam, { 1: { title: "A", subject: "SDN302" }, 2: { title: "B" } });
+  assert.equal(m.fapTimetable.fetchedAt, 9);
+  assert.equal(m.fapAttendance.fetchedAt, 1);
+});

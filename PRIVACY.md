@@ -9,9 +9,9 @@ This is not an official FuOverflow / FuExam extension.
 
 ## Tiếng Việt
 
-**Extension không thu thập và không gửi bất kỳ dữ liệu nào.** Không có máy chủ, không có tài
-khoản, không có phân tích (analytics), không tải code từ xa. Extension chỉ mở trang thời khóa biểu
-FAP khi bạn tự bật tính năng đó (xem bên dưới), ngoài ra không tự gửi request mạng nào.
+**Extension không có máy chủ riêng và không gửi dữ liệu cho tác giả hay bên thứ ba nào.** Không có
+phân tích (analytics), không tải code từ xa. Extension chỉ kết nối mạng khi bạn tự bật: đọc thời khóa
+biểu FAP, và đồng bộ lên Google Drive của chính bạn (xem bên dưới).
 
 ### Dữ liệu được lưu, và lưu ở đâu
 
@@ -24,8 +24,8 @@ Extension chỉ lưu tiến độ ôn đề của bạn:
 Dữ liệu chỉ gồm mã số thread, số câu và thời điểm thay đổi. Không có tên tài khoản, nội dung bài
 viết, ảnh đề hay lịch sử duyệt web.
 
-Dữ liệu chỉ nằm trong `chrome.storage.local`, trên máy của bạn. Extension không dùng Chrome Sync; muốn
-chuyển sang máy khác thì dùng Xuất/Nhập file. (Bản 2.0 trở về trước có sao chép sang `chrome.storage.sync`;
+Dữ liệu nằm trong `chrome.storage.local`, trên máy của bạn. Extension không dùng Chrome Sync; muốn
+chuyển sang máy khác thì dùng Xuất/Nhập file, hoặc bật đồng bộ Google Drive (bên dưới). (Bản 2.0 trở về trước có sao chép sang `chrome.storage.sync`;
 bản này chuyển phần đó về máy một lần rồi xoá khỏi `chrome.storage.sync`.)
 
 Tốc độ chụp màn hình và vị trí các vùng che đáp án được lưu trong `localStorage` của trang diễn đàn.
@@ -41,6 +41,16 @@ hiện tại, rồi đóng tab. Lịch và số liệu điểm danh chỉ đư�
 Extension không đọc mật khẩu, cookie hay trang FAP nào khác ngoài hai trang trên; nếu FAP đòi đăng nhập, bạn tự đăng nhập
 trong tab đó.
 
+**Đồng bộ Google Drive (tuỳ chọn, tắt mặc định):** khi bạn bấm nút đám mây và đăng nhập Google,
+extension lưu một file `fu-study-kit.json` vào thư mục dữ liệu ẩn của ứng dụng trên Google Drive của
+chính bạn (`appDataFolder`, quyền `drive.appdata`): tiến độ ôn đề, tên đề và môn, thời khóa biểu và
+số liệu điểm danh. Extension không đọc được file nào khác trong Drive của bạn. Để hiện bạn đang đăng
+nhập tài khoản nào, extension đọc tên, email và ảnh đại diện Google và chỉ lưu chúng trên máy này.
+Đăng nhập dùng cửa sổ của Google; extension không thấy mật khẩu. Mã truy cập chỉ nằm trong bộ nhớ của
+trình duyệt và bị thu hồi khi bạn bấm Đăng xuất. Dữ liệu đi thẳng từ trình duyệt của bạn tới Google,
+không qua máy chủ nào khác. Muốn xoá file trên Drive: vào Google Drive → Cài đặt → Quản lý ứng dụng →
+FU Study Kit → Xoá dữ liệu ứng dụng ẩn.
+
 **Xuất/Nhập dữ liệu:** file JSON bạn xuất ra được lưu vào máy của bạn và chỉ được đọc khi bạn chủ
 động chọn nó để nhập. Extension không gửi file đó đi đâu.
 
@@ -52,6 +62,7 @@ duyệt và tải thẳng vào máy bạn.
 | Quyền | Lý do |
 |---|---|
 | `storage` | Lưu tiến độ ôn đề và thời khóa biểu trên máy (`chrome.storage.local`). |
+| `identity` | Mở cửa sổ đăng nhập Google khi bạn bấm nút đám mây, để đồng bộ với Google Drive của bạn. |
 | Truy cập `fuoverflow.com`, `fuexam.me` | Hiện checkbox, nhãn tiến độ và panel nhảy câu trên hai diễn đàn này. Extension không chạy trên trang nào khác. |
 | `scripting` + truy cập `fap.fpt.edu.vn` (tuỳ chọn, chỉ xin khi bạn bấm "Bật thời khóa biểu") | Đọc bảng lịch tuần và báo cáo điểm danh từ tab FAP để hiện trong popup. |
 | `<all_urls>` (tuỳ chọn, chỉ xin khi bạn bấm "Cho phép chụp màn hình") | Trình duyệt chỉ cho phép `chrome.tabs.captureVisibleTab` khi có quyền này. Chỉ dùng để chụp tab diễn đàn đang mở khi bạn bấm nút chụp. |
@@ -70,9 +81,9 @@ Mở issue tại https://github.com/CDinhh/Extension-FU-Study-Kit/issues
 
 ## English
 
-**The extension collects nothing and sends nothing.** There is no server, no account, no
-analytics and no remote code. The extension opens the FAP timetable page only if you turn that
-feature on (see below); otherwise it makes no network requests of its own.
+**The extension has no server of its own and sends no data to its author or any third party.**
+There is no analytics and no remote code. It goes online only for what you turn on: reading your FAP
+timetable, and syncing to your own Google Drive (see below).
 
 ### What is stored, and where
 
@@ -85,8 +96,8 @@ Only your study progress:
 It consists of thread ids, question numbers and timestamps only. No account names, post content,
 exam images or browsing history.
 
-It lives only in `chrome.storage.local`, on your device. The extension does not use Chrome Sync; to
-move to another device, use Export/Import. (Version 2.0 and earlier mirrored it to
+It lives in `chrome.storage.local`, on your device. The extension does not use Chrome Sync; to move
+to another device, use Export/Import, or turn on Google Drive sync (below). (Version 2.0 and earlier mirrored it to
 `chrome.storage.sync`; this version moves that copy back to the device once and then clears
 `chrome.storage.sync`.)
 
@@ -104,6 +115,16 @@ sessions, and closes the tab. The timetable and attendance counts are kept only 
 never sent anywhere. The extension does not read passwords, cookies or any FAP page other than these two; if FAP
 asks you to sign in, you do that yourself in that tab.
 
+**Google Drive sync (optional, off by default):** when you press the cloud button and sign in with
+Google, the extension keeps one file, `fu-study-kit.json`, in the hidden app-data folder of your own
+Google Drive (`appDataFolder`, scope `drive.appdata`): study progress, thread titles and subjects,
+the timetable and attendance counts. It cannot see any other file in your Drive. To show which account
+is signed in, it reads your Google name, email and profile picture and keeps them on this device only.
+Sign-in happens in Google's own window; the extension never sees your password. The access token is
+kept in browser memory only and is revoked when you press Sign out. Data goes straight from your
+browser to Google, through no other server. To delete the Drive file: Google Drive → Settings →
+Manage apps → FU Study Kit → Delete hidden app data.
+
 **Export/Import:** the JSON file you export is saved on your device and is read only when you
 choose it for import. The extension never uploads it.
 
@@ -115,6 +136,7 @@ downloaded straight to your device.
 | Permission | Why |
 |---|---|
 | `storage` | Save study progress and the timetable on your device (`chrome.storage.local`). |
+| `identity` | Open Google's sign-in window when you press the cloud button, to sync with your Google Drive. |
 | Access to `fuoverflow.com`, `fuexam.me` | Show checkboxes, progress badges and the question-jump panel on these two forums. The extension runs on no other site. |
 | `scripting` + access to `fap.fpt.edu.vn` (optional, requested only when you press "Bật thời khóa biểu") | Read the weekly timetable and the attendance report from a FAP tab to show them in the popup. |
 | `<all_urls>` (optional, requested only when you press "Cho phép chụp màn hình") | Chrome allows `chrome.tabs.captureVisibleTab` only with this permission. It is used only to capture the open forum tab when you press a capture button. |
