@@ -183,6 +183,7 @@
   const ttStatus = (data, sync) => {
     const at = data?.fetchedAt;
     if (sync?.state === "attention") return ["warn", "Chờ đăng nhập FAP", "Đăng nhập ở tab FAP vừa mở, lịch sẽ tự cập nhật"];
+    if (sync?.stage === "attendance") return ["busy", `Đang đọc điểm danh… ${sync.att?.courses.length || 0} môn`, ""];
     if (sync) return ["busy", `Đang đồng bộ… ${sync.count || 0} tuần`, ""];
     if (!at) return ["warn", "Chưa có lịch", ""];
     return [Date.now() - at > TT_STALE_MS ? "warn" : "ok", `Cập nhật ${ttAgo(at)}`, `Cập nhật lúc ${ttClock(at)} · đã lưu ${Object.keys(data.weeks).length} tuần`];
@@ -244,10 +245,41 @@
     return table;
   };
 
+  // --- Attendance: FPT bars a course's final exam above 20% absence, so show how much of that
+  // allowance each course has used. Read by background.js right after the timetable. ---
+  const ATT_LIMIT = 0.2;
+
+  const attRow = (c) => {
+    const allowed = Math.floor(c.total * ATT_LIMIT);
+    const left = allowed - c.absent;
+    // A short course (under 5 sessions) allows no absence at all; say so without alarming.
+    const tone = left < 0 ? "is-over" : left === 0 && allowed ? "is-edge" : "";
+    const row = el("li", ["pp-att__row", tone].filter(Boolean).join(" "));
+    row.title = [`${c.name} · ${c.group}`, `Có mặt ${c.present} · Vắng ${c.absent} · Chưa điểm danh ${c.pending}`, `Được vắng tối đa ${allowed}/${c.total} buổi (20%)`].join("\n");
+    const bar = el("span", "pp-att__bar");
+    const fill = el("i");
+    // The bar is the absence allowance: full means no absence left.
+    fill.style.transform = `scaleX(${allowed ? Math.min(c.absent / allowed, 1) : c.absent ? 1 : 0})`;
+    bar.append(fill);
+    const pct = c.total ? Math.round((c.absent / c.total) * 100) : 0;
+    const note = !c.total ? "Chưa có buổi" : left < 0 ? "Quá 20%" : !allowed ? "Không được vắng" : left === 0 ? "Hết lượt vắng" : `Còn vắng được ${left}`;
+    row.append(el("strong", "pp-att__code", c.code), bar, el("span", "pp-att__count", `${c.absent}/${c.total} · ${pct}%`), el("span", "pp-att__note", note));
+    return row;
+  };
+
+  const renderAttendance = (enabled, data) => {
+    const card = $("att");
+    card.hidden = !enabled || !data?.courses?.length;
+    if (card.hidden) return;
+    $("attTerm").textContent = data.term;
+    const risk = (c) => (c.total ? c.absent / Math.max(Math.floor(c.total * ATT_LIMIT), 0.5) : -1);
+    $("attList").replaceChildren(...[...data.courses].sort((a, b) => risk(b) - risk(a)).map(attRow));
+  };
+
   const renderTimetable = async () => {
     const [granted, local, session] = await Promise.all([
       chrome.permissions.contains(FAP),
-      chrome.storage.local.get(["fapTimetable", "prefs"]),
+      chrome.storage.local.get(["fapTimetable", "fapAttendance", "prefs"]),
       chrome.storage.session.get("fapSync")
     ]);
     const enabled = granted && !!local.prefs?.timetable;
@@ -267,6 +299,7 @@
     $("ttNext").disabled = ttView === ttKeys[ttKeys.length - 1];
     $("ttWeek").textContent = ttWeekLabel(ttView);
     $("ttWeek").classList.toggle("is-current", ttView === thisWeek);
+    renderAttendance(enabled, local.fapAttendance);
 
     if (!enabled) {
       body.append(el("p", "pp-tt__note", "Xem lịch học FAP ngay tại đây."));
@@ -279,7 +312,7 @@
       return;
     }
 
-    if (!ttAsked && !sync && (!data?.weeks[thisWeek] || Date.now() - data.fetchedAt > TT_STALE_MS)) {
+    if (!ttAsked && !sync && (!data?.weeks[thisWeek] || !local.fapAttendance || Date.now() - data.fetchedAt > TT_STALE_MS)) {
       ttAsked = true;
       // Past weeks only change in attendance, so they are walked once, then on manual refresh.
       ttSync(false, !ttKeys.some((key) => key < thisWeek));
@@ -315,7 +348,7 @@
   $("ttWeek").addEventListener("click", () => ttStep(0));
   setInterval(() => renderTimetable(), 60000); // keeps "N phút trước" honest while the popup stays open
   chrome.storage.onChanged.addListener((changes) => {
-    if (changes.fapTimetable || changes.fapSync) renderTimetable();
+    if (changes.fapTimetable || changes.fapAttendance || changes.fapSync) renderTimetable();
     if (Object.keys(changes).some((key) => key.startsWith("threads:"))) renderSites();
   });
 

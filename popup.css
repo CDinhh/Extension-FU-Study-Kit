@@ -110,6 +110,88 @@ body {
   padding: 10px 12px;
 }
 
+/* --- Attendance: one row per course, the bar is the 20% absence allowance --- */
+.pp-att__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pp-att__term {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.pp-att__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pp-att__row {
+  display: grid;
+  grid-template-columns: 84px 1fr 78px 112px;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 12px;
+}
+
+.pp-att__row + .pp-att__row {
+  border-top: 1px solid var(--hair);
+}
+
+.pp-att__code {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.pp-att__bar {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.pp-att__bar i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--done);
+  transform-origin: left;
+  transition: transform 600ms var(--ease);
+}
+
+.pp-att__count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.pp-att__note {
+  color: var(--muted);
+  text-align: right;
+}
+
+.pp-att__row.is-edge .pp-att__bar i {
+  background: var(--exam);
+}
+
+.pp-att__row.is-edge .pp-att__note {
+  color: var(--exam);
+}
+
+.pp-att__row.is-over .pp-att__bar i {
+  background: var(--danger);
+}
+
+.pp-att__row.is-over .pp-att__note {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 /* --- Revision progress: one row per forum --- */
 .pp-sites {
   display: flex;

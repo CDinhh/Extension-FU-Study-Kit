@@ -33,6 +33,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // read once the user is through.
 const FAP_ORIGIN = "https://fap.fpt.edu.vn";
 const FAP_TIMETABLE = `${FAP_ORIGIN}/WeeklyTimetable`;
+// After the timetable, the same tab reads the attendance report: one page load per course.
+const FAP_ATTENDANCE = `${FAP_ORIGIN}/Report/Attendance`;
 
 // Runs inside the FAP page. Selectors are class/icon based so they hold in both UI languages.
 // Weeks are sent one by one (fapWeek) instead of returned: a long crawl would outlive the
@@ -140,6 +142,67 @@ async function crawlTimetable(full) {
   return "done";
 }
 
+// Runs inside the attendance report: the courses of the selected term, and the sessions of the
+// course on screen counted by their status class (works in both UI languages).
+async function readAttendance() {
+  const text = (node) => (node ? node.textContent.replace(/\s+/g, " ").trim() : "");
+  const ready = () => document.getElementById("attendance-report-course") && document.querySelector(".fap-result-card__title");
+  for (let i = 0; !ready() && i < 24; i++) await new Promise((resolve) => setTimeout(resolve, 250));
+  const course = document.getElementById("attendance-report-course");
+  const term = document.getElementById("attendance-report-term");
+  if (!course || !term) return null;
+  const count = (state) => document.querySelectorAll(`.attendance-session-sheet .attendance-status--${state}`).length;
+  return {
+    termId: term.value,
+    term: text(term.selectedOptions[0]),
+    courseId: course.value,
+    courses: [...course.options].map((option) => ({ id: option.value, label: text(option) })),
+    present: count("present"),
+    absent: count("absent"),
+    pending: count("pending"),
+    total: document.querySelectorAll(".attendance-session-sheet tbody tr .attendance-status").length
+  };
+}
+
+// "Political economics of Marxism – Leninism (MLN122) (Half2_SE1915)" -> name, code, group.
+const parseCourse = (label) => {
+  const m = /^(.*?)\s*\(([^()]+)\)\s*\(([^()]+)\)\s*$/.exec(label);
+  return m ? { name: m[1], code: m[2], group: m[3] } : { name: label, code: label, group: "" };
+};
+
+// One course page has loaded: keep its numbers, then open the next course or finish.
+async function stepAttendance(tabId, fapSync) {
+  const [{ result: page }] = await chrome.scripting.executeScript({ target: { tabId }, func: readAttendance });
+  if (!page) return false;
+  // Page data, so only keep checked fields.
+  const str = (v) => String(v ?? "").slice(0, 160);
+  const num = (v) => (Number.isInteger(v) && v >= 0 && v <= 500 ? v : 0);
+  const courses = Array.isArray(page.courses) ? page.courses.slice(0, 40).map((c) => ({ id: str(c?.id), label: str(c?.label) })) : [];
+  const att = fapSync.att || {
+    termId: str(page.termId),
+    term: str(page.term),
+    queue: courses.map((c) => c.id).filter((id) => id && id !== page.courseId),
+    labels: Object.fromEntries(courses.map((c) => [c.id, c.label])),
+    courses: []
+  };
+  const id = str(page.courseId);
+  if (id && !att.courses.some((c) => c.id === id)) {
+    const { present, absent, pending, total } = page;
+    att.courses.push({ id, ...parseCourse(att.labels[id] || id), present: num(present), absent: num(absent), pending: num(pending), total: num(total) });
+  }
+  const next = att.queue.shift();
+  if (next) {
+    await chrome.storage.session.set({ fapSync: { ...fapSync, state: "loading", att } });
+    const url = `${FAP_ATTENDANCE}?termId=${encodeURIComponent(att.termId)}&courseId=${encodeURIComponent(next)}`;
+    chrome.tabs.update(tabId, { url }).catch(() => {});
+    return true;
+  }
+  await chrome.storage.local.set({ fapAttendance: { fetchedAt: Date.now(), term: att.term, courses: att.courses } });
+  await chrome.storage.session.remove("fapSync");
+  chrome.tabs.remove(tabId).catch(() => {});
+  return true;
+}
+
 async function startFapSync(focus, full) {
   const { fapSync } = await chrome.storage.session.get("fapSync");
   if (fapSync) {
@@ -161,12 +224,18 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   const { fapSync } = await chrome.storage.session.get("fapSync");
   if (fapSync?.tabId !== tabId) return;
 
+  const attendance = fapSync.stage === "attendance";
+  const target = attendance ? FAP_ATTENDANCE : FAP_TIMETABLE;
   let started = null;
   try {
-    // Not awaited to the end: the crawl reports through fapWeek / fapDone messages.
-    const run = chrome.scripting.executeScript({ target: { tabId }, func: crawlTimetable, args: [!!fapSync.full] });
-    run.catch(() => {});
-    started = await Promise.race([run.then(([res]) => res?.result ?? null), new Promise((resolve) => setTimeout(() => resolve("running"), 6000))]);
+    if (attendance) {
+      started = await stepAttendance(tabId, fapSync);
+    } else {
+      // Not awaited to the end: the crawl reports through fapWeek / fapDone messages.
+      const run = chrome.scripting.executeScript({ target: { tabId }, func: crawlTimetable, args: [!!fapSync.full] });
+      run.catch(() => {});
+      started = await Promise.race([run.then(([res]) => res?.result ?? null), new Promise((resolve) => setTimeout(() => resolve("running"), 6000))]);
+    }
   } catch {
     // On FAP this means the page navigated mid-read (Cloudflare check passing); the next load
     // reports again. Anywhere else it is the sign-in provider, which we cannot and need not read.
@@ -174,11 +243,11 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   }
   if (started) return;
 
-  // Signed in but landed elsewhere (login lost the return URL): go to the timetable, once.
-  const onFap = tab.url?.startsWith(FAP_ORIGIN) && !tab.url.startsWith(FAP_TIMETABLE) && !/\/auth\//i.test(tab.url);
+  // Signed in but landed elsewhere (login lost the return URL): go back to the page, once.
+  const onFap = tab.url?.startsWith(FAP_ORIGIN) && !tab.url.startsWith(target) && !/\/auth\//i.test(tab.url);
   if (onFap && fapSync.state === "attention" && !fapSync.redirected) {
     await chrome.storage.session.set({ fapSync: { ...fapSync, redirected: true } });
-    chrome.tabs.update(tabId, { url: FAP_TIMETABLE }).catch(() => {});
+    chrome.tabs.update(tabId, { url: target }).catch(() => {});
     return;
   }
   if (fapSync.state !== "attention") {
@@ -209,8 +278,10 @@ async function onFapCrawl(message, sender) {
   }
   for (const key of Array.isArray(message.drop) ? message.drop : []) delete weeks[key];
   await chrome.storage.local.set({ fapTimetable: { fetchedAt: Date.now(), weeks } });
-  await chrome.storage.session.remove("fapSync");
-  chrome.tabs.remove(fapSync.tabId).catch(() => {});
+  if (fapSync.stage === "attendance") return; // a late fapDone; the timetable is already stored
+  // Timetable done; the same tab moves on to the attendance report.
+  await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "attendance", state: "loading", redirected: false } });
+  chrome.tabs.update(fapSync.tabId, { url: FAP_ATTENDANCE }).catch(() => {});
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

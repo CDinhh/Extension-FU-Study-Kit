@@ -9,7 +9,7 @@ Extension trình duyệt (Manifest V3) cho hai diễn đàn [FuOverflow](https:/
 - theo dõi đề đang học và câu đang làm dở ngay trên danh sách đề;
 - nhảy nhanh tới câu bất kỳ khi xem ảnh đề, gắn cờ những câu chưa chắc;
 - **chụp màn hình tự động toàn bộ câu hỏi kèm khung chat thảo luận đáp án** (nén sẵn file ZIP);
-- **xem thời khóa biểu tuần của FAP ngay trong popup** (tuỳ chọn, tự cập nhật, luôn ghi rõ lần cập nhật gần nhất);
+- **xem thời khóa biểu tuần và báo cáo điểm danh của FAP ngay trong popup** (tuỳ chọn, tự cập nhật, luôn ghi rõ lần cập nhật gần nhất);
 - mang dữ liệu sang máy khác bằng **Xuất/Nhập file**.
 
 > Không phải extension chính thức của FuOverflow / FuExam / Đại học FPT.
@@ -62,6 +62,10 @@ Khi mở ảnh đề, cột bên phải có panel điều khiển:
 - Dùng nút `‹` `›` để chuyển tuần, bấm vào ngày tháng để về tuần này. **Lịch thi** được tô màu riêng.
 - Dòng trạng thái luôn ghi lần cập nhật gần nhất. Mở popup mà lịch đã cũ hơn 1 giờ thì lịch tự làm mới, hoặc bấm nút làm mới.
 - Hết phiên FAP thì extension mở tab FAP để bạn đăng nhập (cách nào cũng được), xong lịch tự cập nhật.
+- **Điểm danh:** đọc xong lịch, extension đi qua từng môn trong trang Báo cáo điểm danh của kỳ hiện tại.
+  Mỗi môn có số buổi vắng / tổng số buổi, phần trăm vắng và thanh "quỹ vắng" (FPT cho vắng tối đa 20%
+  số buổi): **Còn vắng được N**, **Hết lượt vắng** (vàng) hoặc **Quá 20%** (đỏ). Môn nguy hiểm nhất
+  đứng đầu; rê chuột vào một môn để xem số buổi có mặt / vắng / chưa điểm danh.
 
 ### Popup: môn đã ôn, Xuất/Nhập
 

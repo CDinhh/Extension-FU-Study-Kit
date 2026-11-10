@@ -9,7 +9,7 @@ A Manifest V3 browser extension for the [FuOverflow](https://fuoverflow.com) and
 - see which exams you are studying and the question you reached, right in the list;
 - jump to any question while viewing exam images, and flag the ones you are unsure about;
 - **automatically screenshot every question together with its answer discussion** (zipped for you);
-- **see your FAP weekly timetable in the popup** (optional, refreshes itself, always shows when it was last updated);
+- **see your FAP weekly timetable and attendance report in the popup** (optional, refreshes itself, always shows when it was last updated);
 - move your data to another computer with **Export/Import**.
 
 > Not an official extension of FuOverflow, FuExam or FPT University.
@@ -70,6 +70,12 @@ toolbar → **"Cho phép"** (allow). The extension only captures when you press 
   hour, or press the refresh button.
 - If your FAP session has expired, the extension opens a FAP tab so you can sign in (any sign-in
   method works), then the timetable updates by itself.
+- **Attendance:** after the timetable, the extension goes through each course on the attendance
+  report page for the current term. Each course shows absences / total sessions, the absence
+  percentage and an "absence allowance" bar (FPT allows at most 20% of sessions):
+  **"Còn vắng được N"** (N more allowed), **"Hết lượt vắng"** (none left, amber) or **"Quá 20%"**
+  (over the limit, red). The most at-risk course comes first; hover a course for its present /
+  absent / not-yet-taken counts.
 
 ### Popup: studied subjects, Export/Import
 
