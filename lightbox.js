@@ -6,7 +6,7 @@
   // Per-device: answer covers per thread, as fractions of the viewport.
   const COVERS_KEY = "fuo-covers";
   const ANSWERS_KEY = "fuo-capture-answers";
-  const EXT_NAME = "Exam Checklist for FuOverflow & FuExam";
+  const EXT_NAME = "FU Study Kit: Exam Checklist & FAP Timetable";
 
   // keep in sync with lib/store-core.js siteFromHost (this MAIN-world script cannot load lib/)
   const host = location.hostname;
@@ -784,7 +784,7 @@
       }
     });
 
-    // Another tab (or Chrome Sync) changed this site's data: refresh flags.
+    // Another tab (or an import) changed this site's data: refresh flags.
     const onStateChanged = (event) => {
       if (event.source !== window || event.data?.source !== "fuo-isolated") return;
       if (event.data.action !== "stateChanged") return;

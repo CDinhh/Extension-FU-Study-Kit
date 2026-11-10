@@ -2,34 +2,45 @@
 <html lang="vi">
   <head>
     <meta charset="utf-8" />
-    <title>Exam Checklist</title>
+    <title>FU Study Kit</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main class="pp">
       <header class="pp-head">
-        <span class="pp-eyebrow">FuOverflow · FuExam</span>
-        <h1>Exam Checklist</h1>
-        <p class="pp-sub">Không phải extension chính thức của FuOverflow / FuExam.</p>
+        <h1>FU Study Kit</h1>
       </header>
 
-      <section class="pp-sites" id="sites" aria-label="Thống kê theo trang"></section>
-
-      <section class="pp-actions">
-        <button type="button" class="pp-btn pp-btn--primary" id="export">
-          <span>Xuất dữ liệu</span>
-          <span class="pp-btn__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" /></svg>
-          </span>
-        </button>
-        <button type="button" class="pp-btn" id="import">
-          <span>Nhập dữ liệu</span>
-          <span class="pp-btn__icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5M5 19h14" /></svg>
-          </span>
-        </button>
-        <input type="file" id="file" accept="application/json,.json" hidden />
+      <section class="pp-card pp-tt" aria-label="Thời khóa biểu FAP">
+        <div class="pp-card__core">
+          <div class="pp-tt__head">
+            <div class="pp-tt__titles">
+              <span class="pp-site__name">Thời khóa biểu</span>
+              <span class="pp-tt__status" id="ttStatus" role="status" hidden></span>
+            </div>
+            <div class="pp-tt__nav" id="ttNav" hidden>
+              <button type="button" class="pp-tt__step" id="ttPrev" aria-label="Tuần trước" title="Tuần trước">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6 8.5 12l6 6" /></svg>
+              </button>
+              <button type="button" class="pp-tt__week" id="ttWeek" title="Về tuần này"></button>
+              <button type="button" class="pp-tt__step" id="ttNext" aria-label="Tuần sau" title="Tuần sau">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6 6 6-6 6" /></svg>
+              </button>
+            </div>
+            <button type="button" class="pp-tt__refresh" id="ttRefresh" aria-label="Làm mới thời khóa biểu" title="Làm mới" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1M17.5 3.5v3.4h-3.4M6.5 20.5v-3.4h3.4" />
+              </svg>
+            </button>
+          </div>
+          <div class="pp-tt__body" id="ttBody"></div>
+        </div>
       </section>
+
+      <section class="pp-card" style="--i: 1" aria-label="Tiến độ ôn đề">
+        <div class="pp-card__core pp-sites" id="sites"></div>
+      </section>
+
 
       <p class="pp-msg" id="msg" role="status" hidden></p>
 
@@ -48,18 +59,16 @@
         </div>
       </section>
 
-      <section class="pp-sync">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1M17.5 3.5v3.4h-3.4M6.5 20.5v-3.4h3.4" />
-        </svg>
-        <p>Tự đồng bộ qua Chrome Sync khi bật · Brave: dùng Xuất/Nhập file</p>
-      </section>
-      <p class="pp-warn" id="syncError" role="alert" hidden></p>
-
       <footer class="pp-foot">
         <nav>
-          <a href="https://github.com/CDinhh/Extension-Fuoverflow-test-checklist/blob/main/PRIVACY.md" target="_blank" rel="noopener">Chính sách riêng tư</a>
-          <a href="https://github.com/CDinhh/Extension-Fuoverflow-test-checklist" target="_blank" rel="noopener">GitHub</a>
+          <button type="button" class="pp-foot__link" id="export">Xuất dữ liệu</button>
+          <button type="button" class="pp-foot__link" id="import">Nhập dữ liệu</button>
+          <input type="file" id="file" accept="application/json,.json" hidden />
+          <a class="pp-foot__link" href="https://github.com/CDinhh/Extension-FU-Study-Kit/blob/main/PRIVACY.md" target="_blank" rel="noopener">Chính sách riêng tư</a>
+          <a class="pp-foot__gh" href="https://github.com/CDinhh/Extension-FU-Study-Kit" target="_blank" rel="noopener" title="Mã nguồn trên GitHub">
+            <img src="assets/icons/avatar.jpg" alt="" width="18" height="18" />
+            <span>GitHub</span>
+          </a>
           <span class="pp-foot__ver">v2.0.0</span>
         </nav>
       </footer>

@@ -167,17 +167,35 @@ test("diffCounts ignores key order (chrome.storage returns keys sorted)", () => 
   assert.equal(C.sameData(local.fuexam, site()), false);
 });
 
-test("sync items round-trip with every item under 7500 bytes", () => {
-  const s = C.emptySite();
-  for (let t = 0; t < 100; t++) {
-    s.flags[String(1000 + t)] = {};
-    for (let q = 0; q < 30; q++) s.flags[String(1000 + t)][String(q)] = { on: true, at: 1700000000000 + q };
-    s.checklist[String(1000 + t)] = { done: true, at: 1700000000000 };
-  }
-  const items = C.toSyncItems("fuexam", s);
-  for (const [k, v] of Object.entries(items)) {
-    assert.match(k, /^s:(fuoverflow|fuexam):(checklist|progress|flags):\d+$/);
-    assert.ok(JSON.stringify(v).length <= 7500, k);
-  }
-  assert.deepEqual(C.fromSyncItems(items).fuexam, s);
+test("fromSyncItems joins the old Chrome Sync shards and skips unknown keys", () => {
+  const items = {
+    "s:fuexam:checklist:0": { 1: { done: true, at: 5 } },
+    "s:fuexam:checklist:1": { 2: { done: true, at: 6 } },
+    "s:fuexam:flags:0": { 1: { 3: { on: true, at: 7 } } },
+    "s:other:checklist:0": { 9: { done: true, at: 1 } },
+    unrelated: 1
+  };
+  assert.deepEqual(C.fromSyncItems(items), {
+    fuexam: { checklist: { 1: { done: true, at: 5 }, 2: { done: true, at: 6 } }, progress: {}, flags: { 1: { 3: { on: true, at: 7 } } } }
+  });
+});
+
+test("studiedBySubject groups touched threads by course code, newest first", () => {
+  const s = site({
+    checklist: { 1: { done: true, at: 100 }, 2: { done: false, at: 900 } },
+    progress: { 3: { current: 4, total: 50, at: 300 }, 4: { current: null, total: null, removed: true, at: 400 } },
+    flags: { 5: { 2: { on: true, at: 200 } }, 6: { 1: { on: false, at: 500 } } }
+  });
+  const meta = {
+    1: { title: "MLN122 - Q2 - 6", subject: "MLN122", subjectUrl: "https://fuoverflow.com/forums/MLN122/" },
+    3: { title: "SDN302 SP25 PE", subject: "SDN302 - Server-side" },
+    5: { title: "Đề MLN122 FE" }
+  };
+  const groups = C.studiedBySubject(s, meta);
+  assert.deepEqual(groups.map((g) => g.subject), ["SDN302", "MLN122"]);
+  assert.deepEqual(groups[1].tests.map((t) => t.tid), ["5", "1"]);
+  assert.equal(groups[1].url, "https://fuoverflow.com/forums/MLN122/");
+  assert.deepEqual(groups[0].tests[0], { tid: "3", title: "SDN302 SP25 PE", done: false, current: 4, total: 50, flags: 0, at: 300 });
+  assert.equal(groups[1].tests[0].flags, 1);
+  assert.deepEqual(C.studiedBySubject(site({ checklist: { 9: { done: true, at: 1 } } }))[0].subject, "Khác");
 });

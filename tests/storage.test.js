@@ -34,6 +34,9 @@ const makeChrome = () => {
         delete this.data[k];
       }
       listeners.forEach((f) => f(changes, name));
+    },
+    async clear() {
+      await this.remove(Object.keys(this.data));
     }
   });
   return {
@@ -58,7 +61,7 @@ test("concurrent updateSite calls both survive", async () => {
   ]);
   const local = chrome.storage.local.data["site:fuexam"];
   assert.deepEqual(Object.keys(local.checklist).sort(), ["1", "2"]);
-  assert.deepEqual(C.fromSyncItems(chrome.storage.sync.data).fuexam.checklist, local.checklist);
+  assert.deepEqual(chrome.storage.sync.data, {}); // nothing goes to Chrome Sync any more
 });
 
 test("two tabs (separate module instances) writing at once both survive", async () => {
@@ -112,41 +115,35 @@ test("applyImport merges with newer-wins", async () => {
   assert.deepEqual((await S.previewImport(file)).counts.fuexam, { added: 0, updated: 0 });
 });
 
-test("sync quota error keeps local and records syncError", async () => {
+test("loadSite moves old Chrome Sync data into local once, then empties sync", async () => {
   const S = fresh();
-  chrome.storage.sync.failSet = true;
-  await S.updateSite("fuexam", (d, now) => (d.checklist["1"] = { done: true, at: now }));
-  assert.equal(chrome.storage.local.data["site:fuexam"].checklist["1"].done, true);
-  const err = await S.getSyncError();
-  assert.equal(typeof err, "string");
-  assert.ok(err.length > 0);
-  chrome.storage.sync.failSet = false;
-  await S.updateSite("fuexam", (d, now) => (d.checklist["2"] = { done: true, at: now }));
-  assert.equal(await S.getSyncError(), null);
-});
-
-test("loadSite pulls sync-only data", async () => {
-  const S = fresh();
-  const remote = { ...C.emptySite(), checklist: { 9: { done: true, at: 5 } } };
-  Object.assign(chrome.storage.sync.data, C.toSyncItems("fuexam", remote));
+  await S.updateSite("fuexam", (d) => (d.checklist["1"] = { done: true, at: 10 }));
+  Object.assign(chrome.storage.sync.data, {
+    "s:fuexam:checklist:0": { 1: { done: false, at: 5 }, 9: { done: true, at: 5 } },
+    "s:fuoverflow:progress:0": { 7: { current: 3, total: 9, at: 5 } }
+  });
+  chrome.storage.local.data.syncError = "old quota error";
   const site = await S.loadSite("fuexam");
+  assert.equal(C.isDone(site, "1"), true); // the newer local entry wins
   assert.equal(C.isDone(site, "9"), true);
-  assert.equal(chrome.storage.local.data["site:fuexam"].checklist["9"].done, true);
+  assert.equal(C.isStudying(chrome.storage.local.data["site:fuoverflow"], "7"), true);
+  assert.deepEqual(chrome.storage.sync.data, {});
+  assert.equal("syncError" in chrome.storage.local.data, false);
+
+  // Retired for good: data that shows up in sync later is ignored, even by a new tab.
+  chrome.storage.sync.data["s:fuexam:checklist:0"] = { 2: { done: true, at: 5 } };
+  delete require.cache[STORAGE_PATH];
+  const tab = require(STORAGE_PATH);
+  assert.equal(C.isDone(await tab.loadSite("fuexam"), "2"), false);
 });
 
-test("onSiteChanged fires for local writes and merges incoming sync changes", async () => {
+test("onSiteChanged fires for local writes of known sites only", async () => {
   const S = fresh();
   const seen = [];
   S.onSiteChanged((id) => seen.push(id));
   await S.updateSite("fuoverflow", (d, now) => (d.checklist["1"] = { done: true, at: now }));
+  await chrome.storage.local.set({ "site:other": {}, prefs: {} });
+  await chrome.storage.sync.set({ "s:fuexam:checklist:0": {} });
   await tick();
-  assert.ok(seen.includes("fuoverflow"));
-
-  // Another machine pushes a shard straight into sync.
-  seen.length = 0;
-  const remote = { ...C.emptySite(), progress: { 7: { current: 3, total: 9, at: 5 } } };
-  await chrome.storage.sync.set(C.toSyncItems("fuexam", remote));
-  await tick();
-  assert.ok(seen.includes("fuexam"));
-  assert.equal(C.isStudying(chrome.storage.local.data["site:fuexam"], "7"), true);
+  assert.deepEqual(seen, ["fuoverflow"]);
 });

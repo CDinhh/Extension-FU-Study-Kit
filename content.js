@@ -217,22 +217,32 @@
   };
 
   // --- Optional page clean-up, switched from the popup (chrome.storage.local "prefs") ---
-  // hideDonate: FuExam's floating donate banner. hideCommunity: FuOverflow's "join the community" popup.
+  // hideDonate: FuExam's floating donate banner. hideCommunity: FuOverflow's pop-ups (see POPUPS).
   let hideCommunity = false;
-  let watchedOverlay = null;
+  const watchedPopups = new Set();
 
-  // That popup locks the page while open, so let the site's own close button run its cleanup.
+  // [element id, class it gets while shown, its close button]. Each one locks page scrolling while
+  // open, so we press the site's own close button and let its cleanup run.
+  const POPUPS = [
+    ["fuoFbVerifyOverlay", "fuo-fbv--show", "fuoFbvClose"], // "join the community" (Facebook verify)
+    ["fuoPromoPopup", "is-active", "fuoPromoClose"] // "Công cụ hỗ trợ học tập" promo
+  ];
+
   const closeCommunity = () => {
-    const overlay = document.getElementById("fuoFbVerifyOverlay");
-    if (hideCommunity && overlay?.classList.contains("fuo-fbv--show")) document.getElementById("fuoFbvClose")?.click();
+    if (!hideCommunity) return;
+    for (const [id, shown, close] of POPUPS) {
+      if (document.getElementById(id)?.classList.contains(shown)) document.getElementById(close)?.click();
+    }
   };
 
-  // The overlay sits in the DOM from the start and is shown later by class/style changes.
+  // The pop-ups sit in the DOM from the start and are shown later by class/style changes.
   const watchCommunity = () => {
-    const overlay = document.getElementById("fuoFbVerifyOverlay");
-    if (!overlay || overlay === watchedOverlay) return;
-    watchedOverlay = overlay;
-    new MutationObserver(closeCommunity).observe(overlay, { attributes: true, attributeFilter: ["class", "style"] });
+    for (const [id] of POPUPS) {
+      const popup = document.getElementById(id);
+      if (!popup || watchedPopups.has(popup)) continue;
+      watchedPopups.add(popup);
+      new MutationObserver(closeCommunity).observe(popup, { attributes: true, attributeFilter: ["class", "style"] });
+    }
     closeCommunity();
   };
 
@@ -248,10 +258,63 @@
     if (area === "local" && changes.prefs) applyPrefs(changes.prefs.newValue);
   });
 
+  // --- Titles and subjects of studied threads, for the popup's list. Local only, not exported. ---
+  // shortcut: entries are never pruned (~100 bytes each), add pruning if someone studies thousands of threads.
+  const metaKey = `threads:${siteId}`;
+  const clean = (node) => (node ? node.textContent.replace(/\s+/g, " ").trim().slice(0, 200) : "");
+  const studied = (id) => FuoCore.isDone(cache, id) || FuoCore.isStudying(cache, id) || FuoCore.flagSet(cache, id).size > 0;
+  let metaSent = "";
+  let metaTimer = null;
+
+  const collectMeta = () => {
+    const found = {};
+    const path = location.pathname;
+    if (path.includes("/threads/")) {
+      const id = extractThreadId(path);
+      const titleEl = document.querySelector(".p-title-value");
+      // The last forum crumb is the subject. FuExam repeats the crumbs at the bottom, so read the first trail.
+      const crumb = [...(document.querySelector(".p-breadcrumbs")?.querySelectorAll('a[href*="/forums/"]') || [])].pop();
+      if (id && titleEl) {
+        const copy = titleEl.cloneNode(true);
+        copy.querySelectorAll(".fuo-badge, .fuo-check, .label, .labelLink").forEach((n) => n.remove());
+        found[id] = { title: clean(copy), subject: clean(crumb), subjectUrl: crumb?.href || "" };
+      }
+    } else if (path.startsWith("/forums/")) {
+      // On a forum page the forum is the subject. Row prefix links are not (FuExam points them at the forum too).
+      const subject = clean(document.querySelector(".p-title-value"));
+      const subjectUrl = location.origin + path.replace(/page-\d+\/?$/, "");
+      document.querySelectorAll(".structItem--thread[data-fuo-id]").forEach((item) => {
+        const id = item.dataset.fuoId;
+        const link = item.querySelector('.structItem-title a[href*="/threads/"]:not(.labelLink)');
+        if (studied(id) && link) found[id] = { title: clean(link), subject, subjectUrl };
+      });
+    }
+    return found;
+  };
+
+  const saveMeta = async () => {
+    const found = collectMeta();
+    const sig = JSON.stringify(found);
+    if (sig === "{}" || sig === metaSent || !alive()) return;
+    metaSent = sig;
+    const all = (await chrome.storage.local.get(metaKey))[metaKey] || {};
+    let changed = false;
+    for (const [id, entry] of Object.entries(found)) {
+      const next = { ...all[id] };
+      for (const [k, v] of Object.entries(entry)) if (v) next[k] = v;
+      if (FuoCore.sameData(next, all[id] || {})) continue;
+      all[id] = next;
+      changed = true;
+    }
+    if (changed) await chrome.storage.local.set({ [metaKey]: all });
+  };
+
   const decorate = () => {
     decorateThreadList();
     decorateThreadPage();
     watchCommunity();
+    clearTimeout(metaTimer);
+    metaTimer = setTimeout(() => saveMeta().catch(() => {}), 800);
   };
 
   // --- Bridge for lightbox.js (MAIN world cannot call chrome.*) ---
@@ -269,7 +332,7 @@
     };
   };
 
-  // Lightbox reports every slide change; batch them so chrome.storage.sync's write quota holds.
+  // Lightbox reports every slide change; batch them so storage is not rewritten on every slide.
   const progressTimers = {};
   const setProgress = (id, current, total) => {
     if (!alive()) return showStaleNotice();
