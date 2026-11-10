@@ -462,6 +462,7 @@
   const CLOUD_ICON =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 18.5h9.25a3.75 3.75 0 0 0 .6-7.45A5.5 5.5 0 0 0 6.7 9.6 4.5 4.5 0 0 0 7.5 18.5z"/></svg>';
   let drive = null;
+  const NO_DRIVE = "Chưa cho phép quyền Google Drive"; // same text as drive.js
 
   const renderAccount = async () => {
     const [{ drive: d }, { driveBusy }] = await Promise.all([chrome.storage.local.get("drive"), chrome.storage.session.get("driveBusy")]);
@@ -490,13 +491,15 @@
     btn.dataset.tipTitle = name ? `${name} · ${email}` : email;
     btn.dataset.tip = driveBusy
       ? "Đang đồng bộ với Google Drive…"
-      : drive.error
+      : drive.error === NO_DRIVE
+        ? "Bạn chưa cho phép extension dùng Google Drive nên chưa đồng bộ được. Bấm để đăng nhập lại và tick ô Google Drive."
+        : drive.error
         ? `Đồng bộ lỗi: ${drive.error}. Bấm để thử lại.`
         : `${drive.lastSync ? `Đã đồng bộ ${ttAgo(drive.lastSync)}` : "Chưa đồng bộ"}. Tự đồng bộ khi bạn ôn đề hoặc lịch cập nhật; bấm để đồng bộ ngay.`;
   };
 
   $("acct").addEventListener("click", () => {
-    const login = !drive || drive.error === "Cần đăng nhập lại";
+    const login = !drive || drive.error === "Cần đăng nhập lại" || drive.error === NO_DRIVE;
     chrome.runtime.sendMessage({ action: login ? "driveLogin" : "driveSync" }).catch(() => {});
   });
   $("logout").addEventListener("click", () => chrome.runtime.sendMessage({ action: "driveLogout" }).catch(() => {}));

@@ -27,7 +27,8 @@ async function authorize(interactive) {
     scope: DRIVE_SCOPES,
     state,
     // Silent renewal reuses the browser's Google session; a click may pick another account.
-    prompt: interactive ? "select_account" : "none",
+    // "consent" shows the permission checkboxes again, so a Drive box left unticked can be ticked.
+    prompt: interactive ? "select_account consent" : "none",
     ...(drive?.account?.email ? { login_hint: drive.account.email } : {})
   });
   const back = await chrome.identity.launchWebAuthFlow({ url: url.href, interactive });
@@ -37,7 +38,18 @@ async function authorize(interactive) {
   const token = params.get("access_token");
   if (!token) throw new Error("Google không trả về quyền truy cập.");
   const exp = Date.now() + (Number(params.get("expires_in")) || 3600) * 1000 - 60000;
-  await chrome.storage.session.set({ driveToken: { token, exp } });
+  // Google lets the user untick single permissions; without Drive we can sign in but not sync.
+  const hasDrive = (params.get("scope") || "").split(" ").includes("https://www.googleapis.com/auth/drive.appdata");
+  await chrome.storage.session.set({ driveToken: { token, exp, drive: hasDrive } });
+  return token;
+}
+
+const NO_DRIVE = "Chưa cho phép quyền Google Drive";
+
+async function driveToken() {
+  const token = await getToken();
+  const { driveToken: t } = await chrome.storage.session.get("driveToken");
+  if (t?.token === token && t.drive === false) throw new Error(NO_DRIVE);
   return token;
 }
 
@@ -49,12 +61,14 @@ async function getToken(interactive = false) {
 
 // fetch with the bearer token; on 401 the token is renewed silently once.
 async function api(url, init = {}, retry = true) {
-  const token = await getToken();
+  const token = await driveToken();
   const res = await fetch(url, { ...init, headers: { ...init.headers, Authorization: `Bearer ${token}` } });
   if (res.status === 401 && retry) {
     await chrome.storage.session.remove("driveToken");
     return api(url, init, false);
   }
+  // 403 with a scope reason: the Drive permission was refused or later removed in the Google account.
+  if (res.status === 403 && /insufficient|scope/i.test(await res.clone().text())) throw new Error(NO_DRIVE);
   if (!res.ok) throw new Error(`Google Drive báo lỗi ${res.status}`);
   return res;
 }
@@ -142,8 +156,9 @@ async function syncNow() {
     if (!fileId || !C.sameData(after, remote)) fileId = await upload(fileId, C.buildCloud(after));
     await setDrive({ fileId, lastSync: Date.now(), error: null });
   } catch (err) {
-    const signin = /interaction|consent|login|User|401/i.test(err?.message || "");
-    await setDrive({ error: signin ? "Cần đăng nhập lại" : err?.message || String(err) });
+    const message = err?.message || String(err);
+    const signin = message !== NO_DRIVE && /interaction|consent|login|User|401/i.test(message);
+    await setDrive({ error: signin ? "Cần đăng nhập lại" : message });
   } finally {
     await chrome.storage.session.remove("driveBusy");
   }
