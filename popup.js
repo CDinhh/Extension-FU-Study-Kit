@@ -57,6 +57,9 @@
 
   // One open subject per forum, kept across re-renders.
   const openSubject = {};
+  // Subjects are newest first; past this many, the rest fold into a "+N" chip (a term has ~5 courses).
+  const CHIP_LIMIT = 6;
+  const showAll = {};
 
   const subjectPanel = (host, g) => {
     const panel = el("div", "pp-subj");
@@ -97,8 +100,10 @@
       const chips = el("div", "pp-chips");
       const siteLink = link("pp-site__name", name, `https://${host}/`);
       siteLink.title = `Mở ${host}`;
-      if (!groups.some((g) => g.subject === openSubject[id])) delete openSubject[id];
-      for (const g of groups) {
+      const folded = !showAll[id] && groups.length > CHIP_LIMIT;
+      const shown = folded ? groups.slice(0, CHIP_LIMIT - 1) : groups;
+      if (!shown.some((g) => g.subject === openSubject[id])) delete openSubject[id];
+      for (const g of shown) {
         const chip = el("button", "pp-chip");
         chip.type = "button";
         chip.setAttribute("aria-expanded", String(g.subject === openSubject[id]));
@@ -109,6 +114,16 @@
           renderSites();
         });
         chips.append(chip);
+      }
+      if (groups.length > CHIP_LIMIT) {
+        const more = el("button", "pp-chip pp-chip--more", folded ? `+${groups.length - shown.length}` : "Thu gọn");
+        more.type = "button";
+        more.title = folded ? "Xem tất cả môn" : "Chỉ hiện các môn gần đây";
+        more.addEventListener("click", () => {
+          showAll[id] = folded;
+          renderSites();
+        });
+        chips.append(more);
       }
       if (!groups.length) chips.append(el("span", "pp-site__host", "Chưa ôn đề nào"));
       row.append(siteLink, chips, siteSwitch(id) || el("span"));

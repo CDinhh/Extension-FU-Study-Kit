@@ -206,6 +206,13 @@ body {
   background: rgba(110, 168, 254, 0.12);
 }
 
+.pp-chip--more {
+  padding: 0 8px;
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+}
+
 .pp-chip__n {
   min-width: 16px;
   padding: 3px 4px;
