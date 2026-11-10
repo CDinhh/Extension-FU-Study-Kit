@@ -90,7 +90,7 @@ No. All code is packaged in the extension.
 
 ## Privacy policy URL
 
-https://github.com/CDinhh/Extension-FU-Study-Kit/blob/main/PRIVACY.md
+https://cdinhh.github.io/Extension-FU-Study-Kit/privacy.html
 
 ## Screenshots (1280×800)
 

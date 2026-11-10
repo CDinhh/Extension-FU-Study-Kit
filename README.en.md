@@ -146,7 +146,7 @@ Upgrading from an older version:
 
 The extension has no server of its own, sends no data to its author or any third party, has no analytics
 and loads no remote code. Your data stays on your computer; only when you turn it on does the extension
-read FAP and write to your own Google Drive / Google Calendar. Details: [PRIVACY.md](PRIVACY.md).
+read FAP and write to your own Google Drive / Google Calendar. Details: [privacy policy](https://cdinhh.github.io/Extension-FU-Study-Kit/privacy.html).
 
 ## Development
 
