@@ -9,7 +9,7 @@ Extension trình duyệt (Manifest V3) cho hai diễn đàn [FuOverflow](https:/
 - theo dõi đề đang học và câu đang làm dở ngay trên danh sách đề;
 - nhảy nhanh tới câu bất kỳ khi xem ảnh đề, gắn cờ những câu chưa chắc;
 - **chụp màn hình tự động toàn bộ câu hỏi kèm khung chat thảo luận đáp án** (nén sẵn file ZIP);
-- **xem thời khóa biểu tuần của FAP ngay trong popup** (tuỳ chọn, tự cập nhật, luôn ghi rõ lần cập nhật gần nhất);
+- **xem thời khóa biểu tuần và báo cáo điểm danh của FAP ngay trong popup** (tuỳ chọn, tự cập nhật, luôn ghi rõ lần cập nhật gần nhất);
 - mang dữ liệu sang máy khác bằng **Xuất/Nhập file**.
 
 > Không phải extension chính thức của FuOverflow / FuExam / Đại học FPT.
@@ -60,8 +60,15 @@ Khi mở ảnh đề, cột bên phải có panel điều khiển:
 - Extension mở trang WeeklyTimetable trong một tab nền bằng phiên đăng nhập sẵn có của bạn, đọc lịch
   của tất cả các tuần (cả tuần cũ lẫn tuần sau), lưu trên máy và hiện dạng bảng.
 - Dùng nút `‹` `›` để chuyển tuần, bấm vào ngày tháng để về tuần này. **Lịch thi** được tô màu riêng.
-- Dòng trạng thái luôn ghi lần cập nhật gần nhất. Mở popup mà lịch đã cũ hơn 1 giờ thì lịch tự làm mới, hoặc bấm nút làm mới.
+- Dòng trạng thái luôn ghi lần cập nhật gần nhất. Mở popup mà lịch đã cũ hơn 1 giờ thì lịch tự làm mới, hoặc bấm nút làm mới (mở FAP trong tab nền, đọc xong tự đóng).
+  Nút ↗ bên cạnh mở trang thời khóa biểu FAP trong tab mới.
 - Hết phiên FAP thì extension mở tab FAP để bạn đăng nhập (cách nào cũng được), xong lịch tự cập nhật.
+- **Điểm danh:** đọc xong lịch, extension đi qua từng môn trong trang Báo cáo điểm danh của kỳ hiện tại.
+  Rê chuột (hoặc Tab tới) một ô trong thời khóa biểu để xem từng mục rõ ràng: mã môn, lớp, thời gian,
+  phòng, giảng viên, buổi đó có mặt hay vắng, và điểm danh cả môn: **Đã vắng** (vd. 3/20 buổi, 15%),
+  **Được vắng tối đa** (20% số buổi) và **Còn được vắng** bao nhiêu buổi. Ô của môn đã hết lượt vắng có
+  viền dưới màu vàng, quá 20% thì viền đỏ.
+- **Giao diện sáng / tối:** theo hệ điều hành; bấm nút tròn ở góc trên popup để đổi, lựa chọn được nhớ lại.
 
 ### Popup: môn đã ôn, Xuất/Nhập
 

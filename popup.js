@@ -9,6 +9,31 @@
     return node;
   };
 
+  // Light / dark: follows the system until the header button picks one. Kept in localStorage so
+  // it applies before the first paint (chrome.storage would answer after it).
+  const THEME_KEY = "fuo-theme";
+  const readTheme = () => {
+    try {
+      return localStorage.getItem(THEME_KEY);
+    } catch {
+      return null;
+    }
+  };
+  const applyTheme = (theme) => {
+    if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+  };
+  applyTheme(readTheme());
+  $("theme").addEventListener("click", () => {
+    const now = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    const next = now === "dark" ? "light" : "dark";
+    applyTheme(next);
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {
+      // Private mode or blocked storage: the switch still works for this popup.
+    }
+  });
+
   let msgTimer = null;
   const say = (text, kind = "ok") => {
     const msg = $("msg");
@@ -183,6 +208,7 @@
   const ttStatus = (data, sync) => {
     const at = data?.fetchedAt;
     if (sync?.state === "attention") return ["warn", "Chờ đăng nhập FAP", "Đăng nhập ở tab FAP vừa mở, lịch sẽ tự cập nhật"];
+    if (sync?.stage === "attendance") return ["busy", `Đang đọc điểm danh… ${sync.att?.courses.length || 0} môn`, ""];
     if (sync) return ["busy", `Đang đồng bộ… ${sync.count || 0} tuần`, ""];
     if (!at) return ["warn", "Chưa có lịch", ""];
     return [Date.now() - at > TT_STALE_MS ? "warn" : "ok", `Cập nhật ${ttAgo(at)}`, `Cập nhật lúc ${ttClock(at)} · đã lưu ${Object.keys(data.weeks).length} tuần`];
@@ -192,7 +218,15 @@
     const [code, group] = item.title.split(" - ");
     const exam = /thi|exam/i.test(item.kind || "");
     const cell = el("div", ["pp-tt__cell", item.attended && `is-${item.attended}`, exam && "is-exam"].filter(Boolean).join(" "));
-    cell.title = [item.kind, item.title, item.time, item.room, item.teacher, item.online && "Online", item.attendance].filter(Boolean).join("\n");
+    // Courses near or past the absence limit get a coloured edge, so they show without hovering.
+    const att = attByCode[`${code}|${group}`] || attByCode[code];
+    const attTone = att && attState(att).tone;
+    if (attTone) cell.classList.add(`${attTone}-att`);
+    cell.tabIndex = 0;
+    cell.addEventListener("mouseenter", () => showTip(cell, item));
+    cell.addEventListener("focus", () => showTip(cell, item));
+    cell.addEventListener("mouseleave", hideTip);
+    cell.addEventListener("blur", hideTip);
     if (item.kind) cell.append(el("span", "pp-tt__kind", exam ? "Lịch thi" : item.kind));
     cell.append(el("strong", "", code));
     if (group) cell.append(el("span", "", group));
@@ -244,10 +278,108 @@
     return table;
   };
 
+  // --- Attendance: FPT bars a course's final exam above 20% absence, so show how much of that
+  // allowance each course has used. Read by background.js right after the timetable. ---
+  const ATT_LIMIT = 0.2;
+
+  let attByCode = {};
+
+  const attState = (c) => {
+    const allowed = Math.floor(c.total * ATT_LIMIT);
+    const left = allowed - c.absent;
+    // A short course (under 5 sessions) allows no absence at all; that alone is not a warning.
+    return { tone: left < 0 ? "is-over" : left === 0 && allowed ? "is-edge" : "" };
+  };
+
+  // One floating tooltip for every timetable cell, kept inside the popup.
+  const tip = el("div", "pp-tip");
+  tip.setAttribute("role", "tooltip");
+  tip.hidden = true;
+  document.body.append(tip);
+
+  // A label : value list; rows without a value are skipped.
+  const kvList = (rows) => {
+    const dl = el("dl", "pp-tip__list");
+    for (const [label, value, cls] of rows) {
+      if (!value) continue;
+      dl.append(el("dt", "", label), el("dd", cls || "", value));
+    }
+    return dl;
+  };
+
+  function showTip(cell, item) {
+    const [code, group] = item.title.split(" - ");
+    const c = attByCode[`${code}|${group}`] || attByCode[code];
+    const real = (v) => (v && v !== "-" ? v : "");
+    const session = item.attendance || { yes: "Có mặt", no: "Vắng" }[item.attended];
+    // The cell cuts long names, so the tooltip repeats every detail in full.
+    tip.replaceChildren(
+      el("strong", "pp-tip__name", c?.name || code),
+      kvList([
+        ["Loại", /thi|exam/i.test(item.kind || "") ? "Lịch thi" : item.kind],
+        ["Mã môn", code],
+        ["Lớp", group],
+        ["Thời gian", item.time],
+        ["Phòng", real(item.room)],
+        ["Giảng viên", real(item.teacher)],
+        ["Hình thức", item.online && "Online"],
+        ["Buổi này", session, `is-${item.attended || "none"}`]
+      ])
+    );
+    if (c?.total) {
+      const allowed = Math.floor(c.total * ATT_LIMIT);
+      const left = allowed - c.absent;
+      const tone = attState(c).tone || "is-ok";
+      const box = el("div", "pp-tip__att");
+      box.append(
+        el("span", "pp-tip__label", "Điểm danh cả môn"),
+        kvList([
+          ["Đã vắng", `${c.absent}/${c.total} buổi (${Math.round((c.absent / c.total) * 100)}%)`],
+          ["Được vắng tối đa", `${allowed} buổi (20%)`],
+          ["Còn được vắng", left < 0 ? `Vượt ${-left} buổi, có thể bị cấm thi` : `${left} buổi`, tone]
+        ])
+      );
+      tip.append(box);
+    }
+    placeTip(cell);
+  }
+
+  // Under the anchor when it fits, otherwise above; always inside the popup.
+  function placeTip(anchor) {
+    tip.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    const view = document.documentElement;
+    const left = Math.max(8, Math.min(r.left + r.width / 2 - tip.offsetWidth / 2, view.clientWidth - tip.offsetWidth - 8));
+    const below = r.bottom + 6 + tip.offsetHeight <= view.clientHeight;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${below ? r.bottom + 6 : Math.max(8, r.top - tip.offsetHeight - 6)}px`;
+  }
+
+  function hideTip() {
+    tip.hidden = true;
+  }
+
+  // Buttons explain themselves with the same tooltip (data-tip-title + data-tip in popup.html).
+  for (const node of document.querySelectorAll("[data-tip]")) {
+    const show = () => {
+      tip.replaceChildren(el("strong", "pp-tip__name", node.dataset.tipTitle), el("p", "pp-tip__text", node.dataset.tip));
+      placeTip(node);
+    };
+    node.addEventListener("mouseenter", show);
+    node.addEventListener("focus", show);
+    node.addEventListener("mouseleave", hideTip);
+    node.addEventListener("blur", hideTip);
+  }
+
+  const renderAttendance = (data) => {
+    attByCode = {};
+    for (const c of data?.courses || []) attByCode[c.code] = attByCode[`${c.code}|${c.group}`] = c;
+  };
+
   const renderTimetable = async () => {
     const [granted, local, session] = await Promise.all([
       chrome.permissions.contains(FAP),
-      chrome.storage.local.get(["fapTimetable", "prefs"]),
+      chrome.storage.local.get(["fapTimetable", "fapAttendance", "prefs"]),
       chrome.storage.session.get("fapSync")
     ]);
     const enabled = granted && !!local.prefs?.timetable;
@@ -261,12 +393,14 @@
     const body = $("ttBody");
     const status = $("ttStatus");
     body.replaceChildren();
-    $("ttRefresh").hidden = status.hidden = $("ttNav").hidden = !enabled;
+    $("ttRefresh").hidden = $("ttOpen").hidden = status.hidden = $("ttNav").hidden = !enabled;
     $("ttRefresh").classList.toggle("is-busy", !!sync);
     $("ttPrev").disabled = ttView === ttKeys[0];
     $("ttNext").disabled = ttView === ttKeys[ttKeys.length - 1];
     $("ttWeek").textContent = ttWeekLabel(ttView);
     $("ttWeek").classList.toggle("is-current", ttView === thisWeek);
+    renderAttendance(local.fapAttendance);
+    hideTip();
 
     if (!enabled) {
       body.append(el("p", "pp-tt__note", "Xem lịch học FAP ngay tại đây."));
@@ -279,7 +413,7 @@
       return;
     }
 
-    if (!ttAsked && !sync && (!data?.weeks[thisWeek] || Date.now() - data.fetchedAt > TT_STALE_MS)) {
+    if (!ttAsked && !sync && (!data?.weeks[thisWeek] || !local.fapAttendance || Date.now() - data.fetchedAt > TT_STALE_MS)) {
       ttAsked = true;
       // Past weeks only change in attendance, so they are walked once, then on manual refresh.
       ttSync(false, !ttKeys.some((key) => key < thisWeek));
@@ -315,7 +449,7 @@
   $("ttWeek").addEventListener("click", () => ttStep(0));
   setInterval(() => renderTimetable(), 60000); // keeps "N phút trước" honest while the popup stays open
   chrome.storage.onChanged.addListener((changes) => {
-    if (changes.fapTimetable || changes.fapSync) renderTimetable();
+    if (changes.fapTimetable || changes.fapAttendance || changes.fapSync) renderTimetable();
     if (Object.keys(changes).some((key) => key.startsWith("threads:"))) renderSites();
   });
 

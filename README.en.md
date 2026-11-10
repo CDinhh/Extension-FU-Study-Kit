@@ -9,7 +9,7 @@ A Manifest V3 browser extension for the [FuOverflow](https://fuoverflow.com) and
 - see which exams you are studying and the question you reached, right in the list;
 - jump to any question while viewing exam images, and flag the ones you are unsure about;
 - **automatically screenshot every question together with its answer discussion** (zipped for you);
-- **see your FAP weekly timetable in the popup** (optional, refreshes itself, always shows when it was last updated);
+- **see your FAP weekly timetable and attendance report in the popup** (optional, refreshes itself, always shows when it was last updated);
 - move your data to another computer with **Export/Import**.
 
 > Not an official extension of FuOverflow, FuExam or FPT University.
@@ -67,9 +67,18 @@ toolbar → **"Cho phép"** (allow). The extension only captures when you press 
   every week it can (past and upcoming), stores it on your computer and shows it as a table.
 - Use `‹` `›` to change week and click the dates to return to this week. **Exams** get their own colour.
 - A status line always shows the last update. Opening the popup refreshes a timetable older than one
-  hour, or press the refresh button.
+  hour, or press the refresh button (it reads FAP in a background tab that closes
+  itself when done). The ↗ button next to it opens the FAP timetable page in a new tab.
 - If your FAP session has expired, the extension opens a FAP tab so you can sign in (any sign-in
   method works), then the timetable updates by itself.
+- **Attendance:** after the timetable, the extension goes through each course on the attendance
+  report page for the current term. Hover (or Tab to) a class in the timetable to see each detail on
+  its own labelled line: course code, class, time, room, lecturer, whether you attended that session,
+  and the course's attendance: **"Đã vắng"** (absences, e.g. 3/20 sessions, 15%), **"Được vắng tối đa"**
+  (the 20% allowance) and **"Còn được vắng"** (absences left). Classes of a course with no absences
+  left get an amber bottom edge; over the limit, a red one.
+- **Light / dark theme:** follows your system; the round button at the top of the popup switches it
+  and the choice is remembered.
 
 ### Popup: studied subjects, Export/Import
 
