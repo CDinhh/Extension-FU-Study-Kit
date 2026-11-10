@@ -9,25 +9,35 @@ const DRIVE_FILE = "fu-study-kit.json";
 const DRIVE_API = "https://www.googleapis.com/drive/v3";
 const DRIVE_UPLOAD = "https://www.googleapis.com/upload/drive/v3";
 // Data that travels with the account. Everything else (prefs, theme, covers) stays per device.
-const CLOUD_KEYS = (key) => key.startsWith("site:") || key.startsWith("threads:") || key === "fapTimetable" || key === "fapAttendance";
+const CLOUD_KEYS = (key) => key.startsWith("site:") || key.startsWith("threads:") || ["fapTimetable", "fapAttendance", "calendar"].includes(key);
 
 const C = globalThis.FuoCore;
 const S = globalThis.FuoStorage;
 
 // --- Token ---
 
-async function authorize(interactive) {
-  const { drive } = await chrome.storage.local.get("drive");
+const SCOPE_DRIVE = "https://www.googleapis.com/auth/drive.appdata";
+// Only calendars this extension created, never the user's own; asked for when calendar sync is on.
+const SCOPE_CALENDAR = "https://www.googleapis.com/auth/calendar.app.created";
+const NO_DRIVE = "Chưa cho phép quyền Google Drive";
+const NO_CALENDAR = "Chưa cho phép quyền Google Calendar";
+
+async function authorize(interactive, withCalendar) {
+  const { drive, googleScopes } = await chrome.storage.local.get(["drive", "googleScopes"]);
   const state = crypto.randomUUID();
+  // A silent renewal may only ask for what was granted before, or Google refuses it outright.
+  const calendar = withCalendar || (googleScopes || []).includes(SCOPE_CALENDAR);
+  const scopes = [DRIVE_SCOPES, ...(calendar ? [SCOPE_CALENDAR] : [])].join(" ");
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.search = new URLSearchParams({
     client_id: DRIVE_CLIENT_ID,
     response_type: "token",
     redirect_uri: chrome.identity.getRedirectURL(),
-    scope: DRIVE_SCOPES,
+    scope: scopes,
+    include_granted_scopes: "true",
     state,
     // Silent renewal reuses the browser's Google session; a click may pick another account.
-    // "consent" shows the permission checkboxes again, so a Drive box left unticked can be ticked.
+    // "consent" shows the permission checkboxes again, so a box left unticked can be ticked.
     prompt: interactive ? "select_account consent" : "none",
     ...(drive?.account?.email ? { login_hint: drive.account.email } : {})
   });
@@ -38,47 +48,50 @@ async function authorize(interactive) {
   const token = params.get("access_token");
   if (!token) throw new Error("Google không trả về quyền truy cập.");
   const exp = Date.now() + (Number(params.get("expires_in")) || 3600) * 1000 - 60000;
-  // Google lets the user untick single permissions; without Drive we can sign in but not sync.
-  const hasDrive = (params.get("scope") || "").split(" ").includes("https://www.googleapis.com/auth/drive.appdata");
-  await chrome.storage.session.set({ driveToken: { token, exp, drive: hasDrive } });
+  // Google lets the user untick single permissions, so remember which ones this token really has.
+  const granted = (params.get("scope") || "").split(" ");
+  await chrome.storage.session.set({ driveToken: { token, exp, scopes: granted } });
+  await chrome.storage.local.set({ googleScopes: granted });
   return token;
 }
 
-const NO_DRIVE = "Chưa cho phép quyền Google Drive";
-
-async function driveToken() {
-  const token = await getToken();
-  const { driveToken: t } = await chrome.storage.session.get("driveToken");
-  if (t?.token === token && t.drive === false) throw new Error(NO_DRIVE);
-  return token;
-}
-
-async function getToken(interactive = false) {
+async function getToken(interactive = false, withCalendar = false) {
   const { driveToken } = await chrome.storage.session.get("driveToken");
-  if (!interactive && driveToken && driveToken.exp > Date.now()) return driveToken.token;
-  return authorize(interactive);
+  const fresh = driveToken && driveToken.exp > Date.now() && (!withCalendar || driveToken.scopes?.includes(SCOPE_CALENDAR));
+  if (!interactive && fresh) return driveToken.token;
+  return authorize(interactive, withCalendar);
+}
+
+// A token that carries `scope`, or an error that tells the user which permission is missing.
+async function tokenFor(scope) {
+  const token = await getToken(false, scope === SCOPE_CALENDAR);
+  const { driveToken: t } = await chrome.storage.session.get("driveToken");
+  if (t?.token === token && !t.scopes?.includes(scope)) throw new Error(scope === SCOPE_CALENDAR ? NO_CALENDAR : NO_DRIVE);
+  return token;
 }
 
 // fetch with the bearer token; on 401 the token is renewed silently once.
-async function api(url, init = {}, retry = true) {
-  const token = await driveToken();
+async function api(url, init = {}, scope = SCOPE_DRIVE, retry = true) {
+  const token = await tokenFor(scope);
   const res = await fetch(url, { ...init, headers: { ...init.headers, Authorization: `Bearer ${token}` } });
   if (res.status === 401 && retry) {
     await chrome.storage.session.remove("driveToken");
-    return api(url, init, false);
+    return api(url, init, scope, false);
   }
   if (!res.ok) {
     const body = await res.text();
-    // 403 with a scope reason: the Drive permission was refused or later removed in the Google account.
-    if (res.status === 403 && /insufficient|scope/i.test(body)) throw new Error(NO_DRIVE);
-    // Otherwise pass Google's own reason on (e.g. the Drive API is not enabled for the project).
+    // 403 with a scope reason: the permission was refused or later removed in the Google account.
+    if (res.status === 403 && /insufficient|scope/i.test(body)) throw new Error(scope === SCOPE_CALENDAR ? NO_CALENDAR : NO_DRIVE);
+    // Otherwise pass Google's own reason on (e.g. the API is not enabled for the project).
     let reason = "";
     try {
       reason = String(JSON.parse(body).error?.message || "").slice(0, 160);
     } catch {
       // Not JSON: the status alone will do.
     }
-    throw new Error(`Google Drive báo lỗi ${res.status}${reason ? `: ${reason}` : ""}`);
+    const error = new Error(`Google ${scope === SCOPE_CALENDAR ? "Calendar" : "Drive"} báo lỗi ${res.status}${reason ? `: ${reason}` : ""}`);
+    error.status = res.status;
+    throw error;
   }
   return res;
 }
@@ -112,10 +125,10 @@ async function upload(fileId, body) {
 
 async function readLocalCloud() {
   const ids = Object.keys(C.SITES);
-  const keys = ["fapTimetable", "fapAttendance", ...ids.map((id) => `threads:${id}`)];
+  const keys = ["fapTimetable", "fapAttendance", "calendar", ...ids.map((id) => `threads:${id}`)];
   const [sites, local] = await Promise.all([S.loadAllSites(), chrome.storage.local.get(keys)]);
   const threads = Object.fromEntries(ids.map((id) => [id, local[`threads:${id}`] || {}]));
-  return { sites, threads, fapTimetable: local.fapTimetable || null, fapAttendance: local.fapAttendance || null };
+  return { sites, threads, fapTimetable: local.fapTimetable || null, fapAttendance: local.fapAttendance || null, calendar: local.calendar || null };
 }
 
 async function writeLocalCloud(merged, before) {
@@ -125,7 +138,7 @@ async function writeLocalCloud(merged, before) {
   }
   const set = {};
   for (const id of Object.keys(C.SITES)) if (!C.sameData(merged.threads[id], before.threads[id])) set[`threads:${id}`] = merged.threads[id];
-  for (const key of ["fapTimetable", "fapAttendance"]) if (merged[key] && !C.sameData(merged[key], before[key])) set[key] = merged[key];
+  for (const key of ["fapTimetable", "fapAttendance", "calendar"]) if (merged[key] && !C.sameData(merged[key], before[key])) set[key] = merged[key];
   if (Object.keys(set).length) await chrome.storage.local.set(set);
 }
 
@@ -209,8 +222,9 @@ async function driveLogin() {
 async function driveLogout() {
   const { driveToken } = await chrome.storage.session.get("driveToken");
   if (driveToken) fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(driveToken.token)}`, { method: "POST" }).catch(() => {});
-  await chrome.storage.session.remove(["driveToken", "driveBusy"]);
-  await chrome.storage.local.remove("drive");
+  await chrome.storage.session.remove(["driveToken", "driveBusy", "calendarBusy"]);
+  // Revoking drops every permission, so the next sign-in starts from scratch.
+  await chrome.storage.local.remove(["drive", "googleScopes", "calendarState"]);
 }
 
 // A few seconds after the last local change, push it (and pull anything new).

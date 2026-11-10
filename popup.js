@@ -571,6 +571,69 @@
   });
   renderAccount().then(() => drive && chrome.runtime.sendMessage({ action: "driveSync" }).catch(() => {}));
 
+  // --- Google Calendar settings in the account menu; calendar.js in the worker does the work. ---
+  const NO_CALENDAR = "Chưa cho phép quyền Google Calendar"; // same text as drive.js
+  let calendarCfg = null;
+  let clearArmed = null;
+
+  const renderCalendar = async () => {
+    const [{ calendar, calendarState: st = {} }, { calendarBusy }] = await Promise.all([
+      chrome.storage.local.get(["calendar", "calendarState"]),
+      chrome.storage.session.get("calendarBusy")
+    ]);
+    calendarCfg = calendar || null;
+    const on = !!calendar?.on;
+    $("calOn").checked = on;
+    $("calRemind").value = String(calendar?.remind ?? 30);
+    $("calClear").hidden = !calendar?.id;
+    const status = $("calStatus");
+    status.textContent = calendarBusy
+      ? "Đang cập nhật Google Calendar…"
+      : st.error === NO_CALENDAR
+        ? "Chưa cho phép quyền Google Calendar. Bật lại công tắc và tick ô Calendar."
+        : st.error
+          ? `Lỗi: ${st.error}`
+          : on
+            ? `${st.lastSync ? `Đã cập nhật ${st.count} buổi ${ttAgo(st.lastSync)}` : "Chưa cập nhật"}. Lịch FAP đổi thì sự kiện tự sửa theo, không tạo trùng.`
+            : "Thêm buổi học và lịch thi vào một lịch riêng “FU Study Kit – Lịch học”, không đụng lịch của bạn.";
+    status.className = `pp-menu__status ${calendarBusy ? "is-busy" : st.error ? "is-err" : on ? "is-ok" : ""}`;
+  };
+
+  const saveCalendar = (patch) => chrome.storage.local.set({ calendar: { id: null, remind: 30, on: false, ...calendarCfg, ...patch, at: Date.now() } });
+
+  $("calOn").addEventListener("change", (e) => {
+    const remind = Number($("calRemind").value);
+    if (e.target.checked) {
+      // Google asks for the Calendar permission in its own window; the worker carries on from there.
+      $("calStatus").textContent = "Đang mở cửa sổ cấp quyền Google…";
+      chrome.runtime.sendMessage({ action: "calendarEnable", remind }).catch(() => {});
+    } else {
+      saveCalendar({ on: false });
+    }
+  });
+  $("calRemind").addEventListener("change", (e) => saveCalendar({ remind: Number(e.target.value) }));
+  $("calClear").addEventListener("click", () => {
+    const btn = $("calClear");
+    // Deleting a whole calendar is not undoable, so it takes a second click.
+    if (!clearArmed) {
+      btn.textContent = "Bấm lần nữa để xoá hết";
+      clearArmed = setTimeout(() => {
+        clearArmed = null;
+        btn.textContent = "Xoá lịch đã thêm";
+      }, 4000);
+      return;
+    }
+    clearTimeout(clearArmed);
+    clearArmed = null;
+    btn.textContent = "Xoá lịch đã thêm";
+    $("calStatus").textContent = "Đang xoá lịch…";
+    chrome.runtime.sendMessage({ action: "calendarClear" }).catch(() => {});
+  });
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.calendar || changes.calendarState || changes.calendarBusy) renderCalendar();
+  });
+  renderCalendar();
+
   const localDate = () => {
     const d = new Date();
     const p = (n) => String(n).padStart(2, "0");
