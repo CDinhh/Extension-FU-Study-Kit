@@ -1,38 +1,11 @@
 (() => {
-  const STORAGE_KEY = "fuo-test-checklist";
-  const PROGRESS_KEY = "fuo-study-progress";
+  const siteId = FuoCore.siteFromHost(location.hostname);
+  if (!siteId) return;
 
-  const loadChecklist = () => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    } catch {
-      return {};
-    }
-  };
+  // In-memory copy of this site's data; every render reads from here.
+  let cache = FuoCore.emptySite();
 
-  const saveChecklist = (data) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      /* ignore storage errors */
-    }
-  };
-
-  const loadProgress = () => {
-    try {
-      return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || {};
-    } catch {
-      return {};
-    }
-  };
-
-  const saveProgress = (data) => {
-    try {
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify(data));
-    } catch {
-      /* ignore storage errors */
-    }
-  };
+  const alive = () => typeof chrome !== "undefined" && !!chrome.runtime?.id;
 
   const extractThreadId = (url) => {
     if (!url) return null;
@@ -47,112 +20,110 @@
     return link ? extractThreadId(link.getAttribute("href") || "") : null;
   };
 
-  const markStudying = (id, current = null, total = null) => {
-    if (!id) return;
-    const progress = loadProgress();
-    const existing = progress[id] || {};
-    progress[id] = {
-      ...existing,
-      current: current !== null ? current : (existing.current ?? null),
-      total: total !== null ? total : (existing.total ?? null),
-      updatedAt: Date.now()
-    };
-    saveProgress(progress);
+  // After an extension update this tab's script is orphaned and cannot save: say so instead
+  // of pretending the change stuck.
+  const showStaleNotice = () => {
+    if (document.querySelector(".fuo-notice")) return;
+    const notice = document.createElement("div");
+    notice.className = "fuo-notice";
+    notice.setAttribute("role", "alert");
+    notice.textContent = "Extension vừa được cập nhật nên thay đổi chưa được lưu. Nhấn F5 để tải lại trang.";
+    document.body.append(notice);
   };
 
-  const removeStudying = (id) => {
-    if (!id) return;
-    const progress = loadProgress();
-    delete progress[id];
-    saveProgress(progress);
+  // Apply to the cache right away (instant UI), then persist with read-merge-write.
+  const write = (mutate) => {
+    if (!alive()) {
+      showStaleNotice();
+      decorate(); // puts checkboxes/badges back to the saved state
+      return Promise.resolve(false);
+    }
+    mutate(cache, Date.now());
+    decorate();
+    return FuoStorage.updateSite(siteId, mutate).then(
+      (site) => {
+        cache = site;
+        decorate();
+      },
+      (err) => console.warn("[fuo] save failed:", err)
+    );
+  };
+
+  const setDone = (id, done) => write((d, now) => (d.checklist[id] = { done, at: now }));
+
+  const markStudying = (id) => {
+    const p = cache.progress[id];
+    if (!id || (p && !p.removed)) return;
+    write((d, now) => (d.progress[id] = { current: null, total: null, at: now }));
+  };
+
+  // Opening a thread page marks it once per page view, so a later × (here, in another tab
+  // or on another device) is not undone by the next re-render.
+  let pageMarked = false;
+
+  const removeStudying = (id) =>
+    write((d, now) => (d.progress[id] = { current: null, total: null, removed: true, at: now }));
+
+  const studyLabel = (id) => {
+    const p = cache.progress[id];
+    if (p?.current && p?.total) return `Đang học tới câu ${p.current}/${p.total}`;
+    if (p?.current) return `Đang học tới câu ${p.current}`;
+    return "Đang học";
+  };
+
+  const openThread = (title) => {
+    const link =
+      title.querySelector('a[href*="/threads/"]:not(.labelLink)') || title.querySelector('a[href*="/threads/"]');
+    if (link) link.click();
+  };
+
+  // Shared by list rows and the thread page title. Skips no-op rewrites so the
+  // MutationObserver does not loop.
+  const renderBadge = (title, id, clickable) => {
+    let badge = title.querySelector(".fuo-badge");
+    const done = FuoCore.isDone(cache, id);
+    const studying = FuoCore.isStudying(cache, id);
+
+    if (!done && !studying) {
+      if (badge) badge.remove();
+      return;
+    }
+    const labelText = done ? "Đã ôn xong" : studyLabel(id);
+    if (badge && badge.dataset.fuoText === labelText && badge.dataset.fuoDone === String(done)) return;
+    if (!badge) {
+      badge = document.createElement("span");
+      title.appendChild(badge);
+    }
+    badge.className = `fuo-badge ${done ? "fuo-badge--done" : "fuo-badge--learning"}`;
+    badge.dataset.fuoText = labelText;
+    badge.dataset.fuoDone = String(done);
+    badge.title = done ? "Đã ôn xong đề này" : `${labelText} (Bấm × để xoá trạng thái)`;
+    badge.innerHTML = done
+      ? `<svg class="fuo-badge__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+        <span class="fuo-badge__text">${labelText}</span>`
+      : `<span class="fuo-badge__dot"></span>
+        <span class="fuo-badge__text">${labelText}</span>
+        <button type="button" class="fuo-badge__remove" title="Xoá trạng thái đang học" aria-label="Xoá trạng thái đang học"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button>`;
+
+    badge.onclick = (e) => {
+      if (e.target.closest(".fuo-badge__remove")) {
+        e.stopPropagation();
+        e.preventDefault();
+        removeStudying(id);
+      } else if (clickable) {
+        openThread(title);
+      }
+    };
   };
 
   const renderItemStatus = (item, id) => {
-    const checklist = loadChecklist();
-    const progress = loadProgress();
-    const isDone = !!checklist[id];
-    const itemProgress = progress[id];
-
-    item.classList.toggle("fuo-done", isDone);
-    item.classList.toggle("fuo-learning", !isDone && !!itemProgress);
-
+    const done = FuoCore.isDone(cache, id);
+    item.classList.toggle("fuo-done", done);
+    item.classList.toggle("fuo-learning", FuoCore.isStudying(cache, id));
     const box = item.querySelector(".fuo-check");
-    if (box && box.checked !== isDone) {
-      box.checked = isDone;
-    }
-
+    if (box && box.checked !== done) box.checked = done;
     const title = item.querySelector(".structItem-title");
-    if (!title) return;
-
-    let badge = title.querySelector(".fuo-badge");
-
-    if (isDone) {
-      const labelText = "✓ Đã ôn xong";
-      if (badge && badge.dataset.fuoText === labelText && badge.dataset.fuoDone === "true") {
-        return;
-      }
-      if (!badge) {
-        badge = document.createElement("span");
-        title.appendChild(badge);
-      }
-      badge.className = "fuo-badge fuo-badge--done";
-      badge.dataset.fuoText = labelText;
-      badge.dataset.fuoDone = "true";
-      badge.title = "Đã ôn xong đề này";
-      badge.innerHTML = `<span class="fuo-badge__text">${labelText}</span>`;
-      badge.onclick = (e) => {
-        if (e.target.closest(".fuo-badge__remove")) return;
-        const link =
-          title.querySelector('a[href*="/threads/"]:not(.labelLink)') ||
-          title.querySelector('a[href*="/threads/"]');
-        if (link) link.click();
-      };
-    } else if (itemProgress) {
-      let labelText = "Đang học";
-      if (itemProgress.current && itemProgress.total) {
-        labelText = `Đang học tới câu ${itemProgress.current}/${itemProgress.total}`;
-      } else if (itemProgress.current) {
-        labelText = `Đang học tới câu ${itemProgress.current}`;
-      }
-
-      if (badge && badge.dataset.fuoText === labelText && badge.dataset.fuoDone === "false") {
-        return;
-      }
-      if (!badge) {
-        badge = document.createElement("span");
-        title.appendChild(badge);
-      }
-      badge.className = "fuo-badge fuo-badge--learning";
-      badge.dataset.fuoText = labelText;
-      badge.dataset.fuoDone = "false";
-      badge.title = `${labelText} (Bấm × để xoá trạng thái)`;
-      badge.innerHTML = `
-        <span class="fuo-badge__dot"></span>
-        <span class="fuo-badge__text">${labelText}</span>
-        <button type="button" class="fuo-badge__remove" title="Xoá trạng thái đang học">×</button>
-      `;
-
-      badge.onclick = (e) => {
-        if (e.target.closest(".fuo-badge__remove")) return;
-        const link =
-          title.querySelector('a[href*="/threads/"]:not(.labelLink)') ||
-          title.querySelector('a[href*="/threads/"]');
-        if (link) link.click();
-      };
-
-      const removeBtn = badge.querySelector(".fuo-badge__remove");
-      if (removeBtn) {
-        removeBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          removeStudying(id);
-          renderItemStatus(item, id);
-          updateProgress();
-        });
-      }
-    } else if (badge) {
-      badge.remove();
-    }
+    if (title) renderBadge(title, id, true);
   };
 
   const updateProgress = () => {
@@ -163,66 +134,55 @@
     if (!bar) {
       bar = document.createElement("div");
       bar.className = "fuo-progress";
+      bar.innerHTML = `<div class="fuo-progress__row"><span class="fuo-progress__total"></span><span class="fuo-progress__page"></span></div>
+        <div class="fuo-progress__track"><i class="fuo-progress__fill fuo-progress__fill--learn"></i><i class="fuo-progress__fill fuo-progress__fill--done"></i></div>`;
       items[0].parentElement.parentElement.insertBefore(bar, items[0].parentElement);
     }
-    const checklist = loadChecklist();
-    const progress = loadProgress();
-
+    const { done: totalDone, studying: totalLearning } = FuoCore.countSite(cache);
     const doneOnPage = document.querySelectorAll(".structItem--thread.fuo-done").length;
-    const totalDone = Object.keys(checklist).length;
+    const learningOnPage = document.querySelectorAll(".structItem--thread.fuo-learning").length;
 
-    const learningOnPage = document.querySelectorAll(".structItem--thread.fuo-learning:not(.fuo-done)").length;
-    const totalLearning = Object.keys(progress).filter((k) => !checklist[k]).length;
-
-    let text = "";
-    if (totalLearning > 0 || learningOnPage > 0) {
-      text = `Đã ôn: ${totalDone} đề · Đang học: ${totalLearning} đề (trang này: ${doneOnPage} đã ôn, ${learningOnPage} đang học / ${items.length} đề)`;
-    } else {
-      text = `Đã ôn: ${totalDone} đề tổng cộng (trang này: ${doneOnPage}/${items.length})`;
-    }
+    const total = `Đã ôn ${totalDone} đề` + (totalLearning ? ` · Đang học ${totalLearning}` : "");
+    const page = `Trang này ${doneOnPage}/${items.length}` + (learningOnPage ? ` · ${learningOnPage} đang học` : "");
 
     // Skip no-op writes, otherwise the MutationObserver would loop forever.
-    if (bar.textContent !== text) bar.textContent = text;
+    const key = `${total}|${page}`;
+    if (bar.dataset.fuoKey === key) return;
+    bar.dataset.fuoKey = key;
+    bar.querySelector(".fuo-progress__total").textContent = total;
+    bar.querySelector(".fuo-progress__page").textContent = page;
+    // Next frame, so a freshly inserted bar animates its fill from empty.
+    requestAnimationFrame(() => {
+      bar.querySelector(".fuo-progress__fill--done").style.transform = `scaleX(${doneOnPage / items.length})`;
+      bar.querySelector(".fuo-progress__fill--learn").style.transform =
+        `scaleX(${(doneOnPage + learningOnPage) / items.length})`;
+    });
+  };
+
+  const makeCheckbox = (id) => {
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.className = "fuo-check";
+    box.title = "Đã ôn xong đề này";
+    box.checked = FuoCore.isDone(cache, id);
+    box.addEventListener("click", (e) => e.stopPropagation());
+    box.addEventListener("change", () => setDone(id, box.checked));
+    return box;
   };
 
   const decorateThreadList = () => {
-    const checklist = loadChecklist();
-
     document.querySelectorAll(".structItem--thread:not([data-fuo-id])").forEach((item) => {
       const id = threadId(item);
       const title = item.querySelector(".structItem-title");
       if (!id || !title) return;
 
       item.dataset.fuoId = id;
+      title.prepend(makeCheckbox(id));
 
-      const box = document.createElement("input");
-      box.type = "checkbox";
-      box.className = "fuo-check";
-      box.title = "Đã ôn xong đề này";
-      box.checked = !!checklist[id];
-
-      box.addEventListener("click", (e) => e.stopPropagation());
-      box.addEventListener("change", () => {
-        const current = loadChecklist();
-        if (box.checked) current[id] = Date.now();
-        else delete current[id];
-        saveChecklist(current);
-        renderItemStatus(item, id);
-        updateProgress();
-      });
-
-      title.prepend(box);
-
-      // Track clicks on any thread links to automatically mark as studying
-      const links = item.querySelectorAll('a[href*="/threads/"]');
-      links.forEach((a) => {
-        const trackClick = () => {
-          markStudying(id);
-          renderItemStatus(item, id);
-          updateProgress();
-        };
-        a.addEventListener("click", trackClick);
-        a.addEventListener("auxclick", trackClick);
+      // Opening a thread from the list marks it as studying.
+      item.querySelectorAll('a[href*="/threads/"]').forEach((a) => {
+        a.addEventListener("click", () => markStudying(id));
+        a.addEventListener("auxclick", () => markStudying(id));
       });
     });
 
@@ -233,170 +193,182 @@
     updateProgress();
   };
 
-  const renderThreadTitleStatus = (titleEl, id) => {
-    const checklist = loadChecklist();
-    const progress = loadProgress();
-    const isDone = !!checklist[id];
-    const itemProgress = progress[id];
-
-    let badge = titleEl.querySelector(".fuo-badge");
-
-    if (isDone) {
-      const labelText = "✓ Đã ôn xong";
-      if (badge && badge.dataset.fuoText === labelText && badge.dataset.fuoDone === "true") {
-        return;
-      }
-      if (!badge) {
-        badge = document.createElement("span");
-        titleEl.appendChild(badge);
-      }
-      badge.className = "fuo-badge fuo-badge--done";
-      badge.dataset.fuoText = labelText;
-      badge.dataset.fuoDone = "true";
-      badge.title = "Đã ôn xong đề này";
-      badge.innerHTML = `<span class="fuo-badge__text">${labelText}</span>`;
-    } else if (itemProgress) {
-      let labelText = "Đang học";
-      if (itemProgress.current && itemProgress.total) {
-        labelText = `Đang học tới câu ${itemProgress.current}/${itemProgress.total}`;
-      } else if (itemProgress.current) {
-        labelText = `Đang học tới câu ${itemProgress.current}`;
-      }
-
-      if (badge && badge.dataset.fuoText === labelText && badge.dataset.fuoDone === "false") {
-        return;
-      }
-      if (!badge) {
-        badge = document.createElement("span");
-        titleEl.appendChild(badge);
-      }
-      badge.className = "fuo-badge fuo-badge--learning";
-      badge.dataset.fuoText = labelText;
-      badge.dataset.fuoDone = "false";
-      badge.title = `${labelText} (Bấm × để xoá trạng thái)`;
-      badge.innerHTML = `
-        <span class="fuo-badge__dot"></span>
-        <span class="fuo-badge__text">${labelText}</span>
-        <button type="button" class="fuo-badge__remove" title="Xoá trạng thái đang học">×</button>
-      `;
-
-      const removeBtn = badge.querySelector(".fuo-badge__remove");
-      if (removeBtn) {
-        removeBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          removeStudying(id);
-          renderThreadTitleStatus(titleEl, id);
-        });
-      }
-    } else if (badge) {
-      badge.remove();
-    }
-  };
-
   const decorateThreadPage = () => {
     if (!location.pathname.includes("/threads/")) return;
     const id = extractThreadId(location.pathname);
     if (!id) return;
 
-    // Automatically mark as studying when visiting the thread page
-    markStudying(id);
+    if (!pageMarked) {
+      pageMarked = true;
+      markStudying(id);
+    }
 
     const titleEl = document.querySelector(".p-title-value");
     if (!titleEl) return;
 
     let box = titleEl.querySelector(".fuo-check");
     if (!box) {
-      box = document.createElement("input");
-      box.type = "checkbox";
-      box.className = "fuo-check";
-      box.title = "Đã ôn xong đề này";
-      box.addEventListener("change", () => {
-        const checklist = loadChecklist();
-        if (box.checked) checklist[id] = Date.now();
-        else delete checklist[id];
-        saveChecklist(checklist);
-        renderThreadTitleStatus(titleEl, id);
-      });
+      box = makeCheckbox(id);
       titleEl.prepend(box);
     }
-
-    const checklist = loadChecklist();
-    box.checked = !!checklist[id];
-    renderThreadTitleStatus(titleEl, id);
+    const done = FuoCore.isDone(cache, id);
+    if (box.checked !== done) box.checked = done;
+    renderBadge(titleEl, id, false);
   };
+
+  // --- Optional page clean-up, switched from the popup (chrome.storage.local "prefs") ---
+  // hideDonate: FuExam's floating donate banner. hideCommunity: FuOverflow's "join the community" popup.
+  let hideCommunity = false;
+  let watchedOverlay = null;
+
+  // That popup locks the page while open, so let the site's own close button run its cleanup.
+  const closeCommunity = () => {
+    const overlay = document.getElementById("fuoFbVerifyOverlay");
+    if (hideCommunity && overlay?.classList.contains("fuo-fbv--show")) document.getElementById("fuoFbvClose")?.click();
+  };
+
+  // The overlay sits in the DOM from the start and is shown later by class/style changes.
+  const watchCommunity = () => {
+    const overlay = document.getElementById("fuoFbVerifyOverlay");
+    if (!overlay || overlay === watchedOverlay) return;
+    watchedOverlay = overlay;
+    new MutationObserver(closeCommunity).observe(overlay, { attributes: true, attributeFilter: ["class", "style"] });
+    closeCommunity();
+  };
+
+  const applyPrefs = (prefs = {}) => {
+    document.documentElement.classList.toggle("fuo-hide-donate", !!prefs.hideDonate);
+    document.documentElement.classList.toggle("fuo-hide-community", !!prefs.hideCommunity);
+    hideCommunity = !!prefs.hideCommunity;
+    closeCommunity();
+  };
+
+  chrome.storage.local.get("prefs").then((r) => applyPrefs(r.prefs), () => {});
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.prefs) applyPrefs(changes.prefs.newValue);
+  });
 
   const decorate = () => {
     decorateThreadList();
     decorateThreadPage();
+    watchCommunity();
   };
 
-  decorate();
+  // --- Bridge for lightbox.js (MAIN world cannot call chrome.*) ---
+  const post = (msg) => window.postMessage({ source: "fuo-isolated", ...msg }, location.origin);
+  const okId = (v) => typeof v === "string" && /^\d{1,12}$/.test(v);
+  const okNum = (v) => Number.isInteger(v) && v >= 0 && v <= 10000;
 
-  // XenForo loads filters/pagination via AJAX, so re-run when the list changes.
-  new MutationObserver(decorate).observe(document.body, { childList: true, subtree: true });
+  const threadState = (id) => {
+    const p = cache.progress[id];
+    const live = p && !p.removed;
+    return {
+      current: live ? p.current : null,
+      total: live ? p.total : null,
+      flags: [...FuoCore.flagSet(cache, id)].sort((a, b) => a - b)
+    };
+  };
 
-  // Sync when lightbox updates progress in real time
-  window.addEventListener("fuo:progress-updated", (e) => {
-    const { id } = e.detail || {};
-    if (id) {
-      const item = document.querySelector(`.structItem--thread[data-fuo-id="${id}"]`);
-      if (item) renderItemStatus(item, id);
-      const titleEl = document.querySelector(".p-title-value");
-      if (titleEl && extractThreadId(location.pathname) === String(id)) {
-        renderThreadTitleStatus(titleEl, id);
-      }
-      updateProgress();
-    } else {
-      decorate();
+  // Lightbox reports every slide change; batch them so chrome.storage.sync's write quota holds.
+  const progressTimers = {};
+  const setProgress = (id, current, total) => {
+    if (!alive()) return showStaleNotice();
+    const apply = (d, now) => (d.progress[id] = { current, total, at: now });
+    apply(cache, Date.now());
+    decorate();
+    clearTimeout(progressTimers[id]);
+    progressTimers[id] = setTimeout(() => write(apply), 1000);
+  };
+
+  const setFlags = (id, list) => {
+    const before = FuoCore.flagSet(cache, id);
+    const after = new Set(list);
+    return write((d, now) => {
+      const qs = (d.flags[id] = d.flags[id] || {});
+      for (const q of after) if (!before.has(q)) qs[q] = { on: true, at: now };
+      for (const q of before) if (!after.has(q)) qs[q] = { on: false, at: now };
+    });
+  };
+
+  const loaded = (async () => {
+    try {
+      await FuoStorage.migrateLegacy(siteId, {
+        checklist: localStorage.getItem("fuo-test-checklist"),
+        progress: localStorage.getItem("fuo-study-progress"),
+        flags: localStorage.getItem("fuo-question-flags")
+      });
+    } catch (err) {
+      console.warn("[fuo] migration failed:", err);
     }
-  });
-
-  // Sync across tabs, tab switches, and back-forward navigation
-  window.addEventListener("storage", (e) => {
-    if (!e.key || e.key === STORAGE_KEY || e.key === PROGRESS_KEY) {
-      decorate();
+    try {
+      cache = await FuoStorage.loadSite(siteId);
+    } catch (err) {
+      console.warn("[fuo] load failed:", err);
     }
+  })();
+
+  const reload = () =>
+    FuoStorage.loadSite(siteId).then(
+      (site) => {
+        cache = site;
+        decorate();
+        post({ action: "stateChanged" });
+      },
+      () => {}
+    );
+
+  loaded.then(() => {
+    decorate();
+    // XenForo loads filters/pagination via AJAX, so re-run when the list changes.
+    new MutationObserver(decorate).observe(document.body, { childList: true, subtree: true });
+    FuoStorage.onSiteChanged((id) => id === siteId && reload());
+    window.addEventListener("pageshow", (e) => e.persisted && alive() && reload());
   });
 
-  window.addEventListener("focus", decorate);
-  window.addEventListener("pageshow", decorate);
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) decorate();
-  });
-
-  // Bridge between lightbox (MAIN world) and extension background (service worker)
-  window.addEventListener("message", (event) => {
+  window.addEventListener("message", async (event) => {
     if (event.source !== window || event.data?.source !== "fuo-main") return;
+    const { action, requestId, threadId: id } = event.data;
 
-    if (event.data.action === "captureTab") {
-      const requestId = event.data.requestId;
+    if (action === "getThreadState" && okId(id)) {
+      await loaded;
+      post(
+        alive()
+          ? { action: "threadState", requestId, state: threadState(id) }
+          : { action: "threadState", requestId, error: "Extension context invalidated." }
+      );
+    } else if (action === "setProgress" && okId(id) && okNum(event.data.current) && okNum(event.data.total)) {
+      await loaded;
+      setProgress(id, event.data.current, event.data.total);
+    } else if (
+      action === "setFlags" &&
+      okId(id) &&
+      Array.isArray(event.data.flags) &&
+      event.data.flags.length <= 1000 &&
+      event.data.flags.every(okNum)
+    ) {
+      await loaded;
+      if (!alive()) return post({ action: "ack", requestId, error: "Extension context invalidated." });
+      await setFlags(id, event.data.flags);
+      post({ action: "ack", requestId });
+    } else if (action === "captureTab") {
       try {
-        if (typeof chrome === "undefined" || !chrome.runtime?.id) {
+        if (!alive()) {
           throw new Error("Extension context invalidated.");
         }
         chrome.runtime.sendMessage({ action: "captureTab" }, (response) => {
           const err = chrome.runtime.lastError;
-          window.postMessage(
-            {
-              source: "fuo-isolated",
-              action: "captureTabResponse",
-              requestId,
-              response: err ? { success: false, error: err.message } : response
-            },
-            "*"
-          );
-        });
-      } catch (err) {
-        window.postMessage(
-          {
-            source: "fuo-isolated",
+          post({
             action: "captureTabResponse",
             requestId,
-            response: { success: false, error: err?.message || String(err) }
-          },
-          "*"
-        );
+            response: err ? { success: false, error: err.message } : response
+          });
+        });
+      } catch (err) {
+        post({
+          action: "captureTabResponse",
+          requestId,
+          response: { success: false, error: err?.message || String(err) }
+        });
       }
     }
   });
