@@ -28,7 +28,7 @@ Bộ công cụ học tập cho sinh viên FPT: theo dõi việc ôn đề thi t
 • Đang học: mở một đề là nó được đánh dấu "Đang học"; danh sách hiện luôn câu bạn đang xem dở (ví dụ "Đang học tới câu 8/60").
 • Trong khung xem ảnh đề: nhảy nhanh tới câu bất kỳ, gắn cờ câu chưa chắc, "Tiếp tục câu X" để quay lại chỗ đang học.
 • Chụp màn hình kèm khung chat: chụp từng câu hoặc cả đề (kèm phần bình luận đáp án) và tải về một file ZIP.
-• Thời khóa biểu FAP (tuỳ chọn): bật trong popup để xem lịch tuần dạng bảng, tự cập nhật từ fap.fpt.edu.vn bằng phiên đăng nhập sẵn có của bạn, kèm báo cáo điểm danh từng môn (đã vắng bao nhiêu, còn được vắng mấy buổi), luôn ghi rõ lần cập nhật gần nhất.
+• Thời khóa biểu FAP (tuỳ chọn): bật trong popup để xem lịch tuần dạng bảng, tự cập nhật từ fap.fpt.edu.vn bằng phiên đăng nhập sẵn có của bạn, rê chuột vào môn để xem đã vắng bao nhiêu, còn được vắng mấy buổi, luôn ghi rõ lần cập nhật gần nhất.
 • Chuyển máy: Xuất/Nhập dữ liệu bằng file JSON trong popup.
 
 Quyền riêng tư: extension không gửi dữ liệu đi đâu, không analytics, không tải code từ xa. Tiến độ ôn và lịch học chỉ nằm trong trình duyệt của bạn.
@@ -43,7 +43,7 @@ A study toolkit for FPT University students: track exam revision on the FuOverfl
 • Studying: opening a thread marks it "studying"; the list shows the question you reached (e.g. "question 8/60").
 • In the image viewer: jump to any question, flag unsure ones, and "resume at question X".
 • Screenshot with the discussion panel: capture one question or the whole exam (including the answer comments) as a ZIP.
-• FAP timetable (optional): turn it on in the popup to see your week as a table, refreshed from fap.fpt.edu.vn with your existing session, plus per-course attendance (absences so far and how many you can still miss), with the last update time always shown.
+• FAP timetable (optional): turn it on in the popup to see your week as a table, refreshed from fap.fpt.edu.vn with your existing session, hover a class to see absences so far and how many you can still miss, with the last update time always shown.
 • Move between devices: export/import a JSON file from the popup.
 
 Privacy: no data sent anywhere, no analytics, no remote code. Your progress and timetable stay in your browser.

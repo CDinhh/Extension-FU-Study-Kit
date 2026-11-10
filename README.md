@@ -63,9 +63,10 @@ Khi mở ảnh đề, cột bên phải có panel điều khiển:
 - Dòng trạng thái luôn ghi lần cập nhật gần nhất. Mở popup mà lịch đã cũ hơn 1 giờ thì lịch tự làm mới, hoặc bấm nút làm mới.
 - Hết phiên FAP thì extension mở tab FAP để bạn đăng nhập (cách nào cũng được), xong lịch tự cập nhật.
 - **Điểm danh:** đọc xong lịch, extension đi qua từng môn trong trang Báo cáo điểm danh của kỳ hiện tại.
-  Mỗi môn có số buổi vắng / tổng số buổi, phần trăm vắng và thanh "quỹ vắng" (FPT cho vắng tối đa 20%
-  số buổi): **Còn vắng được N**, **Hết lượt vắng** (vàng) hoặc **Quá 20%** (đỏ). Môn nguy hiểm nhất
-  đứng đầu; rê chuột vào một môn để xem số buổi có mặt / vắng / chưa điểm danh.
+  Rê chuột (hoặc Tab tới) một ô môn trong thời khóa biểu để xem tên môn đầy đủ, buổi đó có mặt hay vắng,
+  số buổi đã vắng / tổng số buổi và thanh "quỹ vắng" (FPT cho vắng tối đa 20% số buổi): **Còn vắng được N
+  buổi**, **Hết lượt vắng** hoặc **Quá 20%**. Ô của môn đã hết lượt vắng có viền dưới màu vàng, quá 20%
+  thì viền đỏ.
 
 ### Popup: môn đã ôn, Xuất/Nhập
 

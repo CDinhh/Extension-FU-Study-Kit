@@ -110,84 +110,106 @@ body {
   padding: 10px 12px;
 }
 
-/* --- Attendance: one row per course, the bar is the 20% absence allowance --- */
-.pp-att__head {
+/* --- Timetable tooltip: course details and the 20% absence allowance --- */
+.pp-tip {
+  position: fixed;
+  z-index: 20;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 4px;
+  flex-direction: column;
+  gap: 2px;
+  width: 248px;
+  padding: 9px 11px 10px;
+  border: 1px solid var(--hair-strong);
+  border-radius: 8px;
+  background: #1a1d24;
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.7);
+  font-size: 11.5px;
+  pointer-events: none;
+  animation: pp-tip-in 160ms var(--ease) both;
 }
 
-.pp-att__term {
-  color: var(--muted);
-  font-size: 11px;
+.pp-tip[hidden] {
+  display: none;
 }
 
-.pp-att__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+@keyframes pp-tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
 }
 
-.pp-att__row {
-  display: grid;
-  grid-template-columns: 84px 1fr 78px 112px;
-  align-items: center;
-  gap: 12px;
-  padding: 5px 0;
+.pp-tip__name {
+  color: var(--text);
   font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
-.pp-att__row + .pp-att__row {
+.pp-tip__meta {
+  color: var(--muted);
+}
+
+.pp-tip__session.is-yes {
+  color: var(--done);
+}
+
+.pp-tip__session.is-no {
+  color: var(--danger);
+}
+
+.pp-tip__session.is-none {
+  color: var(--muted);
+}
+
+.pp-tip__att {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 7px;
   border-top: 1px solid var(--hair);
 }
 
-.pp-att__code {
+.pp-tip__count {
+  color: var(--text);
   font-weight: 600;
-  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
-.pp-att__bar {
+.pp-tip__bar {
   position: relative;
-  height: 6px;
+  height: 5px;
   overflow: hidden;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.pp-att__bar i {
+.pp-tip__bar i {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: var(--done);
   transform-origin: left;
-  transition: transform 600ms var(--ease);
 }
 
-.pp-att__count {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
+.pp-tip__note {
+  color: var(--done);
 }
 
-.pp-att__note {
-  color: var(--muted);
-  text-align: right;
-}
-
-.pp-att__row.is-edge .pp-att__bar i {
+.pp-tip__att.is-edge .pp-tip__bar i {
   background: var(--exam);
 }
 
-.pp-att__row.is-edge .pp-att__note {
+.pp-tip__att.is-edge .pp-tip__note {
   color: var(--exam);
 }
 
-.pp-att__row.is-over .pp-att__bar i {
+.pp-tip__att.is-over .pp-tip__bar i {
   background: var(--danger);
 }
 
-.pp-att__row.is-over .pp-att__note {
+.pp-tip__att.is-over .pp-tip__note {
   color: var(--danger);
   font-weight: 600;
 }
@@ -1026,6 +1048,28 @@ svg {
   border-color: rgba(245, 165, 36, 0.55);
   background: rgba(245, 165, 36, 0.1);
   box-shadow: inset 2px 0 0 var(--exam);
+}
+
+/* Absence allowance used up (amber) or exceeded (red): a bottom edge, apart from the exam's left edge. */
+.pp-tt__cell.is-edge-att {
+  box-shadow: inset 0 -2px 0 var(--exam);
+}
+
+.pp-tt__cell.is-over-att {
+  box-shadow: inset 0 -2px 0 var(--danger);
+}
+
+.pp-tt__cell.is-exam.is-edge-att {
+  box-shadow: inset 2px 0 0 var(--exam), inset 0 -2px 0 var(--exam);
+}
+
+.pp-tt__cell.is-exam.is-over-att {
+  box-shadow: inset 2px 0 0 var(--exam), inset 0 -2px 0 var(--danger);
+}
+
+.pp-tt__cell:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.6);
+  outline-offset: 1px;
 }
 
 .pp-tt__kind {

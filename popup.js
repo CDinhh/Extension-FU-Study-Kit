@@ -193,7 +193,15 @@
     const [code, group] = item.title.split(" - ");
     const exam = /thi|exam/i.test(item.kind || "");
     const cell = el("div", ["pp-tt__cell", item.attended && `is-${item.attended}`, exam && "is-exam"].filter(Boolean).join(" "));
-    cell.title = [item.kind, item.title, item.time, item.room, item.teacher, item.online && "Online", item.attendance].filter(Boolean).join("\n");
+    // Courses near or past the absence limit get a coloured edge, so they show without hovering.
+    const att = attByCode[`${code}|${group}`] || attByCode[code];
+    const attTone = att && attState(att).tone;
+    if (attTone) cell.classList.add(`${attTone}-att`);
+    cell.tabIndex = 0;
+    cell.addEventListener("mouseenter", () => showTip(cell, item));
+    cell.addEventListener("focus", () => showTip(cell, item));
+    cell.addEventListener("mouseleave", hideTip);
+    cell.addEventListener("blur", hideTip);
     if (item.kind) cell.append(el("span", "pp-tt__kind", exam ? "Lịch thi" : item.kind));
     cell.append(el("strong", "", code));
     if (group) cell.append(el("span", "", group));
@@ -249,31 +257,70 @@
   // allowance each course has used. Read by background.js right after the timetable. ---
   const ATT_LIMIT = 0.2;
 
-  const attRow = (c) => {
+  let attByCode = {};
+
+  const attState = (c) => {
     const allowed = Math.floor(c.total * ATT_LIMIT);
     const left = allowed - c.absent;
-    // A short course (under 5 sessions) allows no absence at all; say so without alarming.
-    const tone = left < 0 ? "is-over" : left === 0 && allowed ? "is-edge" : "";
-    const row = el("li", ["pp-att__row", tone].filter(Boolean).join(" "));
-    row.title = [`${c.name} · ${c.group}`, `Có mặt ${c.present} · Vắng ${c.absent} · Chưa điểm danh ${c.pending}`, `Được vắng tối đa ${allowed}/${c.total} buổi (20%)`].join("\n");
-    const bar = el("span", "pp-att__bar");
-    const fill = el("i");
-    // The bar is the absence allowance: full means no absence left.
-    fill.style.transform = `scaleX(${allowed ? Math.min(c.absent / allowed, 1) : c.absent ? 1 : 0})`;
-    bar.append(fill);
-    const pct = c.total ? Math.round((c.absent / c.total) * 100) : 0;
-    const note = !c.total ? "Chưa có buổi" : left < 0 ? "Quá 20%" : !allowed ? "Không được vắng" : left === 0 ? "Hết lượt vắng" : `Còn vắng được ${left}`;
-    row.append(el("strong", "pp-att__code", c.code), bar, el("span", "pp-att__count", `${c.absent}/${c.total} · ${pct}%`), el("span", "pp-att__note", note));
-    return row;
+    return {
+      // A short course (under 5 sessions) allows no absence at all; say so without alarming.
+      tone: left < 0 ? "is-over" : left === 0 && allowed ? "is-edge" : "",
+      note: !c.total ? "Chưa có buổi" : left < 0 ? "Quá 20%, có thể bị cấm thi" : !allowed ? "Không được vắng buổi nào" : left === 0 ? "Hết lượt vắng" : `Còn vắng được ${left} buổi`,
+      // The bar is the absence allowance: full means none left.
+      fill: allowed ? Math.min(c.absent / allowed, 1) : c.absent ? 1 : 0,
+      pct: c.total ? Math.round((c.absent / c.total) * 100) : 0
+    };
   };
 
-  const renderAttendance = (enabled, data) => {
-    const card = $("att");
-    card.hidden = !enabled || !data?.courses?.length;
-    if (card.hidden) return;
-    $("attTerm").textContent = data.term;
-    const risk = (c) => (c.total ? c.absent / Math.max(Math.floor(c.total * ATT_LIMIT), 0.5) : -1);
-    $("attList").replaceChildren(...[...data.courses].sort((a, b) => risk(b) - risk(a)).map(attRow));
+  // One floating tooltip for every timetable cell, kept inside the popup.
+  const tip = el("div", "pp-tip");
+  tip.setAttribute("role", "tooltip");
+  tip.hidden = true;
+  document.body.append(tip);
+
+  function showTip(cell, item) {
+    const [code, group] = item.title.split(" - ");
+    const c = attByCode[`${code}|${group}`] || attByCode[code];
+    tip.replaceChildren(el("strong", "pp-tip__name", c?.name || item.title));
+    // The cell cuts long names, so the tooltip repeats every detail in full.
+    const place = [item.room, item.teacher].filter((v) => v && v !== "-");
+    tip.append(
+      el("span", "pp-tip__meta", [item.kind, c ? `${c.code} · ${c.group}` : item.title].filter(Boolean).join(" · ")),
+      el("span", "pp-tip__meta", [item.time, ...place, item.online && "Online"].filter(Boolean).join(" · "))
+    );
+    const session = item.attendance || { yes: "Có mặt", no: "Vắng" }[item.attended];
+    if (session) tip.append(el("span", `pp-tip__session is-${item.attended || "none"}`, `Buổi này: ${session}`));
+    if (c) {
+      const st = attState(c);
+      const box = el("div", ["pp-tip__att", st.tone].filter(Boolean).join(" "));
+      const bar = el("span", "pp-tip__bar");
+      const fill = el("i");
+      fill.style.transform = `scaleX(${st.fill})`;
+      bar.append(fill);
+      box.append(
+        el("span", "pp-tip__count", `Vắng ${c.absent}/${c.total} buổi · ${st.pct}%`),
+        bar,
+        el("span", "pp-tip__note", st.note),
+        el("span", "pp-tip__meta", `Có mặt ${c.present} · Chưa điểm danh ${c.pending}`)
+      );
+      tip.append(box);
+    }
+    tip.hidden = false;
+    const r = cell.getBoundingClientRect();
+    const view = document.documentElement;
+    const left = Math.max(8, Math.min(r.left + r.width / 2 - tip.offsetWidth / 2, view.clientWidth - tip.offsetWidth - 8));
+    const below = r.bottom + 6 + tip.offsetHeight <= view.clientHeight;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${below ? r.bottom + 6 : Math.max(8, r.top - tip.offsetHeight - 6)}px`;
+  }
+
+  function hideTip() {
+    tip.hidden = true;
+  }
+
+  const renderAttendance = (data) => {
+    attByCode = {};
+    for (const c of data?.courses || []) attByCode[c.code] = attByCode[`${c.code}|${c.group}`] = c;
   };
 
   const renderTimetable = async () => {
@@ -299,7 +346,8 @@
     $("ttNext").disabled = ttView === ttKeys[ttKeys.length - 1];
     $("ttWeek").textContent = ttWeekLabel(ttView);
     $("ttWeek").classList.toggle("is-current", ttView === thisWeek);
-    renderAttendance(enabled, local.fapAttendance);
+    renderAttendance(local.fapAttendance);
+    hideTip();
 
     if (!enabled) {
       body.append(el("p", "pp-tt__note", "Xem lịch học FAP ngay tại đây."));
