@@ -431,8 +431,10 @@ body {
   display: flex;
   flex-direction: column;
   max-height: 168px;
-  margin: 0;
+  /* The list, not each row, reaches 6px past the text so row hovers bleed out without a sideways scroll. */
+  margin: 0 -6px;
   padding: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   list-style: none;
 }
@@ -442,7 +444,6 @@ body {
   align-items: center;
   gap: 10px;
   padding: 5px 6px;
-  margin-inline: -6px;
   border-radius: 4px;
   color: var(--text);
   font-size: 12px;
