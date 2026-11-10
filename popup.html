@@ -8,9 +8,7 @@
   <body>
     <main class="pp">
       <header class="pp-head">
-        <span class="pp-eyebrow">FuOverflow · FuExam · FAP</span>
         <h1>FU Study Kit</h1>
-        <p class="pp-sub">Ôn đề và xem lịch học. Không phải extension chính thức của FuOverflow / FuExam / FPT.</p>
       </header>
 
       <section class="pp-card pp-tt" aria-label="Thời khóa biểu FAP">
@@ -30,7 +28,9 @@
         </div>
       </section>
 
-      <section class="pp-sites" id="sites" aria-label="Thống kê theo trang"></section>
+      <section class="pp-card" style="--i: 1" aria-label="Tiến độ ôn đề">
+        <div class="pp-card__core pp-sites" id="sites"></div>
+      </section>
 
       <section class="pp-actions">
         <button type="button" class="pp-btn pp-btn--primary" id="export">
@@ -65,19 +65,13 @@
         </div>
       </section>
 
-      <section class="pp-sync">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1M17.5 3.5v3.4h-3.4M6.5 20.5v-3.4h3.4" />
-        </svg>
-        <p>Tự đồng bộ qua Chrome Sync khi bật · Brave: dùng Xuất/Nhập file</p>
-      </section>
       <p class="pp-warn" id="syncError" role="alert" hidden></p>
 
       <footer class="pp-foot">
         <nav>
           <a href="https://github.com/CDinhh/Extension-Fuoverflow-test-checklist/blob/main/PRIVACY.md" target="_blank" rel="noopener">Chính sách riêng tư</a>
           <a href="https://github.com/CDinhh/Extension-Fuoverflow-test-checklist" target="_blank" rel="noopener">GitHub</a>
-          <span class="pp-foot__ver">v2.0.0</span>
+          <span class="pp-foot__ver">Không chính thức · v2.0.0</span>
         </nav>
       </footer>
     </main>

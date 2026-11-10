@@ -21,15 +21,16 @@
 
   // One clean-up switch per forum; content.js applies it live.
   const SWITCHES = {
-    fuexam: ["hideDonate", "Ẩn banner Donate"],
-    fuoverflow: ["hideCommunity", "Ẩn popup cộng đồng"]
+    fuexam: ["hideDonate", "Ẩn Donate", "Ẩn banner Donate trên FuExam"],
+    fuoverflow: ["hideCommunity", "Ẩn popup", "Ẩn popup cộng đồng trên FuOverflow"]
   };
   let prefs = {};
 
   const siteSwitch = (id) => {
     if (!SWITCHES[id]) return null;
-    const [key, text] = SWITCHES[id];
+    const [key, text, hint] = SWITCHES[id];
     const label = el("label", "pp-switch");
+    label.title = hint;
     const box = el("input");
     box.type = "checkbox";
     box.setAttribute("role", "switch");
@@ -47,13 +48,9 @@
     const sites = await FuoStorage.loadAllSites();
     const wrap = $("sites");
     wrap.replaceChildren();
-    Object.entries(FuoCore.SITES).forEach(([id, meta], i) => {
+    Object.entries(FuoCore.SITES).forEach(([id, meta]) => {
       const counts = FuoCore.countSite(sites[id]);
-      const card = el("article", "pp-card pp-site");
-      card.style.setProperty("--i", i);
-      const core = el("div", "pp-card__core");
-      const head = el("div", "pp-site__head");
-      head.append(el("span", "pp-site__name", meta.name), siteSwitch(id) || el("span", "pp-site__host", meta.host));
+      const row = el("div", "pp-site");
       const stats = el("dl", "pp-stats");
       for (const [cls, label, n] of [
         ["is-done", "Đã ôn", counts.done],
@@ -64,9 +61,8 @@
         cell.append(el("dd", "", String(n)), el("dt", "", label));
         stats.append(cell);
       }
-      core.append(head, stats);
-      card.append(core);
-      wrap.append(card);
+      row.append(el("span", "pp-site__name", meta.name), stats, siteSwitch(id) || el("span", "pp-site__host", meta.host));
+      wrap.append(row);
     });
   };
 
@@ -113,12 +109,12 @@
 
   // One line that always says how fresh the table is and what the sync is doing.
   const ttStatus = (data, sync) => {
-    const saved = data ? ` · bản lưu lúc ${ttClock(data.fetchedAt)}` : "";
-    if (sync?.state === "attention") return ["warn", `Chờ bạn đăng nhập FAP ở tab vừa mở${saved}`];
-    if (sync) return ["busy", `Đang đồng bộ với FAP…${saved}`];
-    if (!data) return ["warn", "Chưa có lịch. Bấm làm mới để lấy từ FAP."];
+    const saved = data ? ` · bản lưu ${ttClock(data.fetchedAt)}` : "";
+    if (sync?.state === "attention") return ["warn", `Chờ đăng nhập FAP${saved}`];
+    if (sync) return ["busy", `Đang đồng bộ…${saved}`];
+    if (!data) return ["warn", "Chưa có lịch"];
     const stale = Date.now() - data.fetchedAt > TT_STALE_MS;
-    return [stale ? "warn" : "ok", `${stale ? "Bản lưu cũ" : "Mới nhất"} · cập nhật ${ttAgo(data.fetchedAt)} (${ttClock(data.fetchedAt)})`];
+    return [stale ? "warn" : "ok", `Cập nhật ${ttAgo(data.fetchedAt)} · ${ttClock(data.fetchedAt)}`];
   };
 
   const ttCell = (item, rowTime) => {
@@ -192,7 +188,7 @@
     $("ttRefresh").classList.toggle("is-busy", !!sync);
 
     if (!enabled) {
-      body.append(el("p", "pp-tt__note", "Xem lịch học FAP ngay trong popup. Extension chỉ đọc trang thời khóa biểu của bạn và lưu trên máy này."));
+      body.append(el("p", "pp-tt__note", "Xem lịch học FAP ngay tại đây."));
       const btn = el("button", "pp-btn pp-btn--primary pp-tt__enable");
       btn.type = "button";
       btn.id = "ttEnable";

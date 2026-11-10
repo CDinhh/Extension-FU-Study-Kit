@@ -47,19 +47,22 @@
 }
 
 :root {
-  --bg: #050505;
-  --core: #0c0d0f;
-  --hair: rgba(255, 255, 255, 0.08);
-  --hair-strong: rgba(255, 255, 255, 0.14);
-  --text: #ededed;
-  --muted: rgba(237, 237, 237, 0.55);
+  --bg: #05060a;
+  --core: rgba(8, 10, 18, 0.3);
+  --tile: rgba(255, 255, 255, 0.055);
+  --hair: rgba(255, 255, 255, 0.11);
+  --hair-strong: rgba(255, 255, 255, 0.2);
+  --text: #f2f4f8;
+  --muted: rgba(242, 244, 248, 0.62);
   --done: #34d399;
-  --study: #60a5fa;
+  --study: #7cb7ff;
   --flag: #fbbf24;
   --danger: #f87171;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --r-shell: 14px;
+  --r-shell: 18px;
   --pad-shell: 5px;
+  --glass: linear-gradient(140deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04));
+  --blur: blur(22px) saturate(170%);
   color-scheme: dark;
 }
 
@@ -80,86 +83,74 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Ambient mesh: two soft orbs behind everything. */
+/* Ambient mesh: three slow orbs behind the glass. Fixed, so the blur never repaints on scroll. */
 body::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -12%;
   pointer-events: none;
   background:
-    radial-gradient(260px 200px at 12% -4%, rgba(96, 165, 250, 0.18), transparent 70%),
-    radial-gradient(240px 220px at 108% 38%, rgba(129, 140, 248, 0.12), transparent 70%);
+    radial-gradient(300px 240px at 14% 10%, rgba(96, 165, 250, 0.6), transparent 70%),
+    radial-gradient(280px 260px at 92% 34%, rgba(139, 92, 246, 0.5), transparent 70%),
+    radial-gradient(320px 250px at 34% 96%, rgba(16, 185, 129, 0.34), transparent 70%);
+  animation: pp-drift 18s var(--ease) infinite alternate;
 }
 
 .pp {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 18px 14px;
+  gap: 8px;
+  padding: 12px 16px 10px;
 }
 
 /* --- Header --- */
-.pp-eyebrow {
-  display: inline-block;
-  padding: 3px 10px;
-  border: 1px solid var(--hair);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
 .pp-head h1 {
-  margin: 8px 0 2px;
-  font-size: 22px;
+  margin: 0 2px;
+  font-size: 19px;
   font-weight: 600;
   letter-spacing: -0.03em;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
-.pp-sub {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-/* --- Double-bezel card --- */
+/* --- Glass card: a frosted plate (shell) holding a darker inner pane (core) --- */
 .pp-card {
   padding: var(--pad-shell);
   border: 1px solid var(--hair);
   border-radius: var(--r-shell);
-  background: rgba(255, 255, 255, 0.025);
-  box-shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.6);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 24px 48px -28px rgba(0, 0, 0, 0.85);
+  animation: pp-rise 700ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 80ms);
 }
 
 .pp-card__core {
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-radius: calc(var(--r-shell) - var(--pad-shell));
   background: var(--core);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-/* --- Site stats --- */
+/* --- Revision progress: one row per forum --- */
 .pp-sites {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  padding-block: 4px;
 }
 
 .pp-site {
-  animation: pp-rise 700ms var(--ease) both;
-  animation-delay: calc(var(--i, 0) * 80ms + 60ms);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
 }
 
-.pp-site__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 8px;
+.pp-site + .pp-site {
+  border-top: 1px solid var(--hair);
 }
 
 .pp-site__name {
@@ -168,64 +159,57 @@ body::before {
   letter-spacing: -0.01em;
 }
 
+.pp-site > .pp-site__name {
+  width: 86px;
+}
+
 .pp-site__host {
   color: var(--muted);
   font-size: 11px;
 }
 
 .pp-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex: 1;
   gap: 6px;
   margin: 0;
 }
 
 .pp-stats > div {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.025);
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 9px;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: var(--tile);
 }
 
 .pp-stats dd {
   margin: 0;
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .pp-stats dt {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   color: var(--muted);
   font-size: 11px;
 }
 
-.pp-stats dt::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+.pp-stats .is-done dd {
+  color: var(--done);
 }
 
-.pp-stats .is-done dt::before {
-  background: var(--done);
+.pp-stats .is-study dd {
+  color: var(--study);
 }
 
-.pp-stats .is-study dt::before {
-  background: var(--study);
+.pp-stats .is-flag dd {
+  color: var(--flag);
 }
 
-.pp-stats .is-flag dt::before {
-  background: var(--flag);
-}
-
-/* --- Pill buttons with the nested icon island --- */
+/* --- Glass buttons with the nested icon island --- */
 .pp-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -236,12 +220,15 @@ body::before {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  min-height: 42px;
-  padding: 5px 5px 5px 16px;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 4px 4px 16px;
   border: 1px solid var(--hair-strong);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 13px;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
   color: var(--text);
   font: 500 13px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
   cursor: pointer;
@@ -252,8 +239,8 @@ body::before {
 }
 
 .pp-btn:hover {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.34);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .pp-btn:active {
@@ -261,7 +248,7 @@ body::before {
 }
 
 .pp-btn:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.6);
+  outline: 2px solid rgba(124, 183, 255, 0.7);
   outline-offset: 2px;
 }
 
@@ -270,8 +257,8 @@ body::before {
   place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.12);
   transition: transform 500ms var(--ease);
 }
 
@@ -280,25 +267,28 @@ body::before {
 }
 
 .pp-btn--primary {
-  border-color: rgba(96, 165, 250, 0.35);
-  background: rgba(96, 165, 250, 0.12);
-  color: #dbeafe;
+  border-color: rgba(124, 183, 255, 0.45);
+  background: linear-gradient(140deg, rgba(124, 183, 255, 0.34), rgba(124, 183, 255, 0.1));
+  color: #e6f0ff;
 }
 
 .pp-btn--primary:hover {
-  border-color: rgba(96, 165, 250, 0.55);
-  background: rgba(96, 165, 250, 0.18);
+  border-color: rgba(124, 183, 255, 0.7);
+  background-color: rgba(124, 183, 255, 0.12);
 }
 
 .pp-btn--primary .pp-btn__icon {
-  background: rgba(96, 165, 250, 0.22);
-  color: var(--study);
+  background: rgba(124, 183, 255, 0.28);
+  color: #dbeafe;
 }
 
 .pp-btn--ghost {
   padding-right: 16px;
   border-color: transparent;
   background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .pp-perm .pp-card__core {
@@ -322,22 +312,31 @@ svg {
 }
 
 /* --- Messages --- */
-.pp-msg {
-  margin: -6px 0 0;
+.pp-msg,
+.pp-warn {
+  margin: 0;
   padding: 9px 14px;
-  border-radius: 10px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
   font-size: 12px;
   animation: pp-rise 500ms var(--ease) both;
 }
 
 .pp-msg.is-ok {
-  background: rgba(96, 165, 250, 0.1);
-  color: #bfdbfe;
+  background: rgba(124, 183, 255, 0.16);
+  color: #d5e6ff;
 }
 
 .pp-msg.is-err {
-  background: rgba(248, 113, 113, 0.1);
+  background: rgba(248, 113, 113, 0.16);
   color: #fecaca;
+}
+
+.pp-warn {
+  background: rgba(251, 191, 36, 0.14);
+  color: #fde68a;
 }
 
 .pp-perm__text {
@@ -351,35 +350,8 @@ svg {
   font-weight: 500;
 }
 
-.pp-sync {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.pp-sync svg {
-  flex: none;
-  color: var(--study);
-}
-
-.pp-sync p {
-  margin: 0;
-}
-
-.pp-warn {
-  margin: -10px 0 0;
-  padding: 9px 14px;
-  border-radius: 10px;
-  background: rgba(251, 191, 36, 0.1);
-  color: #fde68a;
-  font-size: 12px;
-}
-
 .pp-foot {
-  padding-top: 12px;
-  border-top: 1px solid var(--hair);
+  padding: 2px 4px 0;
   color: var(--muted);
   font-size: 11px;
 }
@@ -396,7 +368,7 @@ svg {
 .pp-foot a {
   color: var(--text);
   text-decoration: none;
-  opacity: 0.8;
+  opacity: 0.75;
   transition: opacity 400ms var(--ease);
 }
 
@@ -415,8 +387,9 @@ svg {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(5, 5, 5, 0.6);
-  backdrop-filter: blur(14px);
+  background: rgba(5, 6, 10, 0.5);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
   opacity: 0;
   transition: opacity 260ms var(--ease);
 }
@@ -428,8 +401,8 @@ svg {
 .pp-modal__card {
   width: 100%;
   max-width: 340px;
-  background: rgba(20, 20, 22, 0.9);
   transform: scale(0.96) translateY(8px);
+  animation: none;
   transition: transform 420ms var(--ease);
 }
 
@@ -464,8 +437,9 @@ svg {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: var(--tile);
 }
 
 .pp-modal__site {
@@ -500,11 +474,29 @@ svg {
 @keyframes pp-rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px) scale(0.985);
   }
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes pp-drift {
+  to {
+    transform: translate(3%, -2%) scale(1.08);
+  }
+}
+
+@keyframes pp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pp-pulse {
+  to {
+    opacity: 0.3;
   }
 }
 
@@ -520,6 +512,7 @@ svg {
 /* --- Per-site clean-up switch --- */
 .pp-switch {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 8px;
   color: var(--muted);
@@ -531,12 +524,13 @@ svg {
   appearance: none;
   position: relative;
   flex: none;
-  width: 30px;
+  width: 32px;
   height: 18px;
   margin: 0;
   border: 1px solid var(--hair-strong);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   transition:
     background-color 400ms var(--ease),
@@ -550,31 +544,27 @@ svg {
   left: 2px;
   width: 12px;
   height: 12px;
-  border-radius: 4px;
-  background: rgba(237, 237, 237, 0.7);
+  border-radius: 50%;
+  background: rgba(242, 244, 248, 0.75);
   transition: transform 450ms var(--ease);
 }
 
 .pp-switch input:checked {
-  border-color: rgba(96, 165, 250, 0.6);
-  background: rgba(96, 165, 250, 0.35);
+  border-color: rgba(124, 183, 255, 0.7);
+  background: rgba(124, 183, 255, 0.45);
 }
 
 .pp-switch input:checked::after {
   background: #fff;
-  transform: translateX(12px);
+  transform: translateX(14px);
 }
 
 .pp-switch input:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.6);
+  outline: 2px solid rgba(124, 183, 255, 0.7);
   outline-offset: 2px;
 }
 
 /* --- FAP timetable --- */
-.pp-tt {
-  animation: pp-rise 700ms var(--ease) both;
-}
-
 .pp-tt__head {
   display: flex;
   align-items: center;
@@ -584,7 +574,8 @@ svg {
 .pp-tt__titles {
   display: flex;
   flex: 1;
-  flex-direction: column;
+  align-items: baseline;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -604,6 +595,7 @@ svg {
   height: 6px;
   border-radius: 50%;
   background: var(--done);
+  box-shadow: 0 0 8px currentColor;
 }
 
 .pp-tt__status.is-warn::before {
@@ -622,23 +614,30 @@ svg {
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid var(--hair);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hair-strong);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
   color: var(--study);
   cursor: pointer;
   transition:
+    transform 500ms var(--ease),
     background-color 400ms var(--ease),
     border-color 400ms var(--ease);
 }
 
 .pp-tt__refresh:hover {
-  border-color: rgba(96, 165, 250, 0.45);
-  background: rgba(96, 165, 250, 0.14);
+  border-color: rgba(124, 183, 255, 0.6);
+  background: rgba(124, 183, 255, 0.2);
+  transform: rotate(40deg);
+}
+
+.pp-tt__refresh:active {
+  transform: rotate(40deg) scale(0.94);
 }
 
 .pp-tt__refresh:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.6);
+  outline: 2px solid rgba(124, 183, 255, 0.7);
   outline-offset: 2px;
 }
 
@@ -650,7 +649,7 @@ svg {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .pp-tt__note {
@@ -665,9 +664,9 @@ svg {
 }
 
 .pp-tt__table {
-  width: calc(100% + 6px);
-  margin: -3px;
-  border-spacing: 3px;
+  width: calc(100% + 8px);
+  margin: -4px;
+  border-spacing: 4px;
   table-layout: fixed;
   font-size: 11px;
   line-height: 1.35;
@@ -688,22 +687,43 @@ svg {
   display: block;
 }
 
+/* Each class is a small glass tile; empty slots stay as faint wells. */
 .pp-tt__table td {
   padding: 0;
-  border-radius: 7px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.025);
   vertical-align: top;
 }
 
+.pp-tt__table td:not(:empty) {
+  border-color: var(--hair);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  transition: transform 500ms var(--ease);
+}
+
+.pp-tt__table td:not(:empty):hover {
+  transform: translateY(-2px);
+}
+
 .pp-tt__table thead .is-today {
-  border-radius: 7px;
-  background: rgba(96, 165, 250, 0.14);
-  color: var(--study);
+  border-radius: 10px;
+  background: linear-gradient(150deg, rgba(124, 183, 255, 0.36), rgba(124, 183, 255, 0.12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  color: #e6f0ff;
 }
 
 .pp-tt__table td.is-today {
-  background: rgba(96, 165, 250, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.22);
+  background: rgba(124, 183, 255, 0.08);
+}
+
+.pp-tt__table td.is-today:not(:empty) {
+  border-color: rgba(124, 183, 255, 0.5);
+  background: linear-gradient(150deg, rgba(124, 183, 255, 0.3), rgba(124, 183, 255, 0.08));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 8px 22px -12px rgba(124, 183, 255, 0.9);
 }
 
 .pp-tt__table .is-past {
@@ -733,7 +753,7 @@ svg {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 5px 6px;
+  padding: 5px 7px;
   color: var(--muted);
 }
 
@@ -760,40 +780,31 @@ svg {
 .pp-tt__cell.is-no::after {
   content: "";
   position: absolute;
-  top: 7px;
-  right: 6px;
+  top: 8px;
+  right: 7px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--done);
+  box-shadow: 0 0 8px var(--done);
 }
 
 .pp-tt__cell.is-no::after {
   background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
 }
 
 .pp-tt__tag {
   align-self: flex-start;
   margin-top: 3px;
-  padding: 0 6px;
-  border-radius: 5px;
-  background: rgba(52, 211, 153, 0.12);
-  color: var(--done);
+  padding: 0 7px;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.16);
+  color: #a7f3d0;
   text-decoration: none;
 }
 
 a.pp-tt__tag:hover {
-  background: rgba(52, 211, 153, 0.24);
-}
-
-@keyframes pp-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes pp-pulse {
-  to {
-    opacity: 0.3;
-  }
+  background: rgba(52, 211, 153, 0.3);
 }
