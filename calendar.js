@@ -9,7 +9,6 @@ const CAL_API = "https://www.googleapis.com/calendar/v3";
 const CAL_TZ = "Asia/Ho_Chi_Minh";
 const CAL_NAME = "FU Study Kit – Lịch học";
 const EXAM_COLOR = "6"; // tangerine, so exams stand out like in the popup
-const CAL_REMINDERS = [-1, 15, 30, 60, 120, 1440]; // the choices offered in the popup (minutes)
 
 const calApi = (path, init = {}) => api(`${CAL_API}${path}`, init, SCOPE_CALENDAR);
 const jsonInit = (method, body) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -104,7 +103,8 @@ async function calendarSyncNow() {
   try {
     const calId = await ensureCalendar(cfg);
     const from = syncFrom();
-    const wanted = C.calendarEvents(fapTimetable, from);
+    // Turning classes or exams off removes their events: they are simply no longer wanted.
+    const wanted = C.calendarEvents(fapTimetable, from).filter((ev) => (ev.exam ? cfg.exams !== false : cfg.classes !== false));
     const weeks = Object.keys(fapTimetable?.weeks || {}).filter((w) => w >= from).sort();
     // The window covers the synced weeks, so a class dropped from FAP loses its event too.
     const end = new Date(`${weeks[weeks.length - 1] || from}T00:00:00+07:00`);
@@ -114,7 +114,7 @@ async function calendarSyncNow() {
     const tasks = [];
     for (const ev of wanted) {
       const id = await eventId(ev.key);
-      const body = eventBody(id, ev, cfg.remind);
+      const body = eventBody(id, ev, ev.exam ? cfg.remindExam ?? C.CALENDAR_DEFAULTS.remindExam : cfg.remind ?? C.CALENDAR_DEFAULTS.remind);
       const cur = existing.get(id);
       existing.delete(id);
       if (cur && sameEvent(cur, body)) continue;
@@ -164,14 +164,13 @@ function calendarSync() {
 }
 
 // Turning it on asks Google for the Calendar permission (a window the user answers), then fills it.
-async function calendarEnable(remind) {
+async function calendarEnable() {
   try {
     await getToken(true, true);
     const { driveToken } = await chrome.storage.session.get("driveToken");
     if (!driveToken?.scopes?.includes(SCOPE_CALENDAR)) throw new Error(NO_CALENDAR);
     const { calendar } = await chrome.storage.local.get("calendar");
-    const pick = CAL_REMINDERS.includes(remind) ? remind : calendar?.remind ?? 30;
-    await chrome.storage.local.set({ calendar: { id: calendar?.id || null, remind: pick, on: true, at: Date.now() } });
+    await chrome.storage.local.set({ calendar: { ...C.CALENDAR_DEFAULTS, ...calendar, on: true, at: Date.now() } });
     await setCalendarState({ error: null });
     await calendarSync();
   } catch (err) {
@@ -189,7 +188,7 @@ async function calendarClear() {
         if (err.status !== 404 && err.status !== 410) throw err;
       });
     }
-    await chrome.storage.local.set({ calendar: { id: null, on: false, remind: calendar?.remind ?? 30, at: Date.now() } });
+    await chrome.storage.local.set({ calendar: { ...C.CALENDAR_DEFAULTS, ...calendar, id: null, on: false, at: Date.now() } });
     await chrome.storage.local.set({ calendarState: { lastSync: 0, count: 0, error: null } });
   } catch (err) {
     await setCalendarState({ error: err?.message || String(err) });

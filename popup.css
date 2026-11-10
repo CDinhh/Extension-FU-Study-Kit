@@ -182,7 +182,7 @@ body {
   gap: 6px;
 }
 
-/* Account menu under the avatar: who is signed in, sync state, sync now, sign out. */
+/* Account menu under the avatar: who is signed in, then one section per Google service. */
 .pp-menu {
   position: absolute;
   top: calc(100% + 6px);
@@ -190,7 +190,7 @@ body {
   z-index: 25;
   display: flex;
   flex-direction: column;
-  width: 260px;
+  width: 272px;
   padding: 11px 12px 12px;
   border: 1px solid var(--hair-strong);
   border-radius: 8px;
@@ -210,10 +210,60 @@ body {
   color: var(--muted);
 }
 
-.pp-menu__status {
-  margin: 8px 0 10px;
-  padding-top: 8px;
+.pp-menu__sec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--hair);
+}
+
+.pp-menu__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pp-menu__label {
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The "?" that holds the explanation, so the menu itself stays short. */
+.pp-help {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 1px solid var(--hair-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font: 600 9.5px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  cursor: help;
+  transition:
+    color 200ms var(--ease),
+    border-color 200ms var(--ease);
+}
+
+.pp-help:hover,
+.pp-help:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  outline: none;
+}
+
+.pp-menu__toggle {
+  margin-left: auto;
+}
+
+.pp-menu__status {
+  margin: 0;
   color: var(--muted);
   line-height: 1.45;
 }
@@ -240,13 +290,38 @@ body {
   background: var(--danger);
 }
 
-.pp-menu__actions {
+.pp-menu__opts {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pp-menu__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+  color: var(--text);
+}
+
+.pp-remind {
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--hair-strong);
+  border-radius: 6px;
+  background: var(--cell);
+  color: var(--text);
+  font: 500 11.5px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.pp-remind:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.6);
+  outline-offset: 1px;
 }
 
 .pp-menu__btn {
-  flex: 1;
   height: 28px;
   border: 1px solid var(--hair-strong);
   border-radius: 6px;
@@ -273,6 +348,15 @@ body {
   background: rgba(var(--accent-rgb), 0.85);
 }
 
+.pp-menu__btn.is-danger {
+  color: var(--danger);
+}
+
+.pp-menu__btn.is-danger:hover {
+  border-color: rgba(var(--danger-rgb), 0.5);
+  background: rgba(var(--danger-rgb), 0.08);
+}
+
 .pp-menu__btn:disabled {
   opacity: 0.55;
   cursor: default;
@@ -283,68 +367,8 @@ body {
   outline-offset: 2px;
 }
 
-/* Google Calendar block under the Drive actions. */
-.pp-menu__cal {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.pp-menu__logout {
   margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--hair);
-}
-
-.pp-menu__label {
-  color: var(--muted);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.pp-menu .pp-menu__switch {
-  justify-content: space-between;
-  color: var(--text);
-  font-size: 11.5px;
-}
-
-.pp-menu__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  color: var(--text);
-}
-
-.pp-menu__row select {
-  height: 26px;
-  padding: 0 6px;
-  border: 1px solid var(--hair-strong);
-  border-radius: 6px;
-  background: var(--cell);
-  color: var(--text);
-  font: 500 11.5px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
-  cursor: pointer;
-}
-
-.pp-menu__row select:focus-visible {
-  outline: 2px solid rgba(var(--accent-rgb), 0.6);
-  outline-offset: 1px;
-}
-
-.pp-menu__cal .pp-menu__status {
-  margin: 0;
-  padding-top: 0;
-  border-top: 0;
-}
-
-.pp-menu__btn.is-danger {
-  flex: none;
-  color: var(--danger);
-}
-
-.pp-menu__btn.is-danger:hover {
-  border-color: rgba(var(--danger-rgb), 0.5);
-  background: rgba(var(--danger-rgb), 0.08);
 }
 
 /* Google account: avatar with a status dot (synced, syncing, error). */

@@ -294,7 +294,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (fromExtension && message?.action === "driveLogin") driveLogin();
   if (fromExtension && message?.action === "driveSync") driveSync();
   if (fromExtension && message?.action === "driveLogout") driveLogout();
-  if (fromExtension && message?.action === "calendarEnable") calendarEnable(message.remind);
+  if (fromExtension && message?.action === "calendarEnable") calendarEnable();
   if (fromExtension && message?.action === "calendarSync") calendarSync();
   if (fromExtension && message?.action === "calendarClear") calendarClear();
   if (message?.action === "fapWeek" || message?.action === "fapDone") {

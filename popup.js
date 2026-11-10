@@ -480,14 +480,16 @@
 
   const syncStatus = (busy) =>
     busy
-      ? "Đang đồng bộ với Google Drive…"
+      ? "Đang đồng bộ…"
       : drive.error === NO_DRIVE
-        ? "Bạn chưa cho phép extension dùng Google Drive. Bấm Đăng nhập lại và tick ô Google Drive."
+        ? "Chưa cho phép quyền Drive, bấm Đăng nhập lại và tick ô Drive."
         : drive.error === "Cần đăng nhập lại"
           ? "Phiên Google đã hết, bấm Đăng nhập lại."
           : drive.error
-            ? `Đồng bộ lỗi: ${drive.error}`
-            : `${drive.lastSync ? `Đã đồng bộ ${ttAgo(drive.lastSync)}` : "Chưa đồng bộ"}. Tự đồng bộ khi bạn ôn đề hoặc lịch cập nhật.`;
+            ? `Lỗi: ${drive.error}`
+            : drive.lastSync
+              ? `Đã đồng bộ ${ttAgo(drive.lastSync)}`
+              : "Chưa đồng bộ";
 
   const renderAccount = async () => {
     const [{ drive: d }, { driveBusy }] = await Promise.all([chrome.storage.local.get("drive"), chrome.storage.session.get("driveBusy")]);
@@ -573,6 +575,18 @@
 
   // --- Google Calendar settings in the account menu; calendar.js in the worker does the work. ---
   const NO_CALENDAR = "Chưa cho phép quyền Google Calendar"; // same text as drive.js
+  const REMINDERS = [
+    [-1, "Không nhắc"],
+    [15, "15 phút"],
+    [30, "30 phút"],
+    [60, "1 giờ"],
+    [120, "2 giờ"],
+    [1440, "1 ngày"],
+    [2880, "2 ngày"]
+  ];
+  for (const select of [$("calRemind"), $("calRemindExam")]) {
+    for (const [value, text] of REMINDERS) select.append(Object.assign(el("option", "", text), { value: String(value) }));
+  }
   let calendarCfg = null;
   let clearArmed = null;
 
@@ -581,37 +595,41 @@
       chrome.storage.local.get(["calendar", "calendarState"]),
       chrome.storage.session.get("calendarBusy")
     ]);
-    calendarCfg = calendar || null;
-    const on = !!calendar?.on;
-    $("calOn").checked = on;
-    $("calRemind").value = String(calendar?.remind ?? 30);
-    $("calClear").hidden = !calendar?.id;
+    const cfg = { ...FuoCore.CALENDAR_DEFAULTS, ...calendar };
+    calendarCfg = cfg;
+    $("calOn").checked = cfg.on;
+    $("calOpts").hidden = !cfg.on && !st.error;
+    $("calClasses").checked = cfg.classes;
+    $("calExams").checked = cfg.exams;
+    $("calRemind").value = String(cfg.remind);
+    $("calRemindExam").value = String(cfg.remindExam);
+    $("calClear").hidden = !cfg.id;
     const status = $("calStatus");
     status.textContent = calendarBusy
-      ? "Đang cập nhật Google Calendar…"
+      ? "Đang cập nhật…"
       : st.error === NO_CALENDAR
-        ? "Chưa cho phép quyền Google Calendar. Bật lại công tắc và tick ô Calendar."
+        ? "Chưa cho phép quyền Calendar, bật lại và tick ô Calendar."
         : st.error
           ? `Lỗi: ${st.error}`
-          : on
-            ? `${st.lastSync ? `Đã cập nhật ${st.count} buổi ${ttAgo(st.lastSync)}` : "Chưa cập nhật"}. Lịch FAP đổi thì sự kiện tự sửa theo, không tạo trùng.`
-            : "Thêm buổi học và lịch thi vào một lịch riêng “FU Study Kit – Lịch học”, không đụng lịch của bạn.";
-    status.className = `pp-menu__status ${calendarBusy ? "is-busy" : st.error ? "is-err" : on ? "is-ok" : ""}`;
+          : st.lastSync
+            ? `Đã cập nhật ${st.count} buổi · ${ttAgo(st.lastSync)}`
+            : "Chưa cập nhật";
+    status.className = `pp-menu__status ${calendarBusy ? "is-busy" : st.error ? "is-err" : st.lastSync ? "is-ok" : ""}`;
   };
 
-  const saveCalendar = (patch) => chrome.storage.local.set({ calendar: { id: null, remind: 30, on: false, ...calendarCfg, ...patch, at: Date.now() } });
+  const saveCalendar = (patch) => chrome.storage.local.set({ calendar: { ...calendarCfg, ...patch, at: Date.now() } });
 
   $("calOn").addEventListener("change", (e) => {
-    const remind = Number($("calRemind").value);
-    if (e.target.checked) {
-      // Google asks for the Calendar permission in its own window; the worker carries on from there.
-      $("calStatus").textContent = "Đang mở cửa sổ cấp quyền Google…";
-      chrome.runtime.sendMessage({ action: "calendarEnable", remind }).catch(() => {});
-    } else {
-      saveCalendar({ on: false });
-    }
+    if (!e.target.checked) return saveCalendar({ on: false });
+    // Google asks for the Calendar permission in its own window; the worker carries on from there.
+    $("calOpts").hidden = false;
+    $("calStatus").textContent = "Đang mở cửa sổ cấp quyền Google…";
+    chrome.runtime.sendMessage({ action: "calendarEnable" }).catch(() => {});
   });
+  $("calClasses").addEventListener("change", (e) => saveCalendar({ classes: e.target.checked }));
+  $("calExams").addEventListener("change", (e) => saveCalendar({ exams: e.target.checked }));
   $("calRemind").addEventListener("change", (e) => saveCalendar({ remind: Number(e.target.value) }));
+  $("calRemindExam").addEventListener("change", (e) => saveCalendar({ remindExam: Number(e.target.value) }));
   $("calClear").addEventListener("click", () => {
     const btn = $("calClear");
     // Deleting a whole calendar is not undoable, so it takes a second click.
