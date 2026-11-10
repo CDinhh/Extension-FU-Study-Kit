@@ -67,7 +67,8 @@ toolbar → **"Cho phép"** (allow). The extension only captures when you press 
   every week it can (past and upcoming), stores it on your computer and shows it as a table.
 - Use `‹` `›` to change week and click the dates to return to this week. **Exams** get their own colour.
 - A status line always shows the last update. Opening the popup refreshes a timetable older than one
-  hour, or press the refresh button.
+  hour, or press the refresh button (it reads FAP in a background tab that closes
+  itself when done). The ↗ button next to it opens the FAP timetable page in a new tab.
 - If your FAP session has expired, the extension opens a FAP tab so you can sign in (any sign-in
   method works), then the timetable updates by itself.
 - **Attendance:** after the timetable, the extension goes through each course on the attendance

@@ -341,8 +341,13 @@
       );
       tip.append(box);
     }
+    placeTip(cell);
+  }
+
+  // Under the anchor when it fits, otherwise above; always inside the popup.
+  function placeTip(anchor) {
     tip.hidden = false;
-    const r = cell.getBoundingClientRect();
+    const r = anchor.getBoundingClientRect();
     const view = document.documentElement;
     const left = Math.max(8, Math.min(r.left + r.width / 2 - tip.offsetWidth / 2, view.clientWidth - tip.offsetWidth - 8));
     const below = r.bottom + 6 + tip.offsetHeight <= view.clientHeight;
@@ -352,6 +357,18 @@
 
   function hideTip() {
     tip.hidden = true;
+  }
+
+  // Buttons explain themselves with the same tooltip (data-tip-title + data-tip in popup.html).
+  for (const node of document.querySelectorAll("[data-tip]")) {
+    const show = () => {
+      tip.replaceChildren(el("strong", "pp-tip__name", node.dataset.tipTitle), el("p", "pp-tip__text", node.dataset.tip));
+      placeTip(node);
+    };
+    node.addEventListener("mouseenter", show);
+    node.addEventListener("focus", show);
+    node.addEventListener("mouseleave", hideTip);
+    node.addEventListener("blur", hideTip);
   }
 
   const renderAttendance = (data) => {
@@ -376,7 +393,7 @@
     const body = $("ttBody");
     const status = $("ttStatus");
     body.replaceChildren();
-    $("ttRefresh").hidden = status.hidden = $("ttNav").hidden = !enabled;
+    $("ttRefresh").hidden = $("ttOpen").hidden = status.hidden = $("ttNav").hidden = !enabled;
     $("ttRefresh").classList.toggle("is-busy", !!sync);
     $("ttPrev").disabled = ttView === ttKeys[0];
     $("ttNext").disabled = ttView === ttKeys[ttKeys.length - 1];

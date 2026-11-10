@@ -60,7 +60,8 @@ Khi mở ảnh đề, cột bên phải có panel điều khiển:
 - Extension mở trang WeeklyTimetable trong một tab nền bằng phiên đăng nhập sẵn có của bạn, đọc lịch
   của tất cả các tuần (cả tuần cũ lẫn tuần sau), lưu trên máy và hiện dạng bảng.
 - Dùng nút `‹` `›` để chuyển tuần, bấm vào ngày tháng để về tuần này. **Lịch thi** được tô màu riêng.
-- Dòng trạng thái luôn ghi lần cập nhật gần nhất. Mở popup mà lịch đã cũ hơn 1 giờ thì lịch tự làm mới, hoặc bấm nút làm mới.
+- Dòng trạng thái luôn ghi lần cập nhật gần nhất. Mở popup mà lịch đã cũ hơn 1 giờ thì lịch tự làm mới, hoặc bấm nút làm mới (mở FAP trong tab nền, đọc xong tự đóng).
+  Nút ↗ bên cạnh mở trang thời khóa biểu FAP trong tab mới.
 - Hết phiên FAP thì extension mở tab FAP để bạn đăng nhập (cách nào cũng được), xong lịch tự cập nhật.
 - **Điểm danh:** đọc xong lịch, extension đi qua từng môn trong trang Báo cáo điểm danh của kỳ hiện tại.
   Rê chuột (hoặc Tab tới) một ô trong thời khóa biểu để xem từng mục rõ ràng: mã môn, lớp, thời gian,

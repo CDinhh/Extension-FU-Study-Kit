@@ -233,6 +233,12 @@ body {
   line-height: 1.35;
 }
 
+.pp-tip__text {
+  margin: 4px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 /* Label : value rows, labels in one muted column so the values line up. */
 .pp-tip__list {
   display: grid;
