@@ -154,10 +154,26 @@ body {
   padding: 12px 14px 10px;
 }
 
+/* Header and footer stay put while the cards scroll; they run edge to edge over the page padding. */
+.pp-head,
+.pp-foot {
+  position: sticky;
+  z-index: 10;
+  margin-inline: -14px;
+  padding-inline: 16px;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
 .pp-head {
+  top: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: -12px;
+  padding-block: 10px 8px;
+  border-bottom: 1px solid var(--hair);
 }
 
 .pp-head h1 {
@@ -585,7 +601,10 @@ svg {
 }
 
 .pp-foot {
-  padding: 2px 2px 0;
+  bottom: 0;
+  margin-bottom: -10px;
+  padding-block: 9px 10px;
+  border-top: 1px solid var(--hair);
   color: var(--muted);
   font-size: 11px;
 }
@@ -645,6 +664,7 @@ svg {
 /* --- Import confirmation --- */
 .pp-modal {
   position: fixed;
+  z-index: 30;
   inset: 0;
   display: grid;
   place-items: center;
