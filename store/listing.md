@@ -29,7 +29,7 @@ Bộ công cụ học tập cho sinh viên FPT: theo dõi việc ôn đề thi t
 • Trong khung xem ảnh đề: nhảy nhanh tới câu bất kỳ, gắn cờ câu chưa chắc, "Tiếp tục câu X" để quay lại chỗ đang học.
 • Chụp màn hình kèm khung chat: chụp từng câu hoặc cả đề (kèm phần bình luận đáp án) và tải về một file ZIP.
 • Thời khóa biểu FAP (tuỳ chọn): bật trong popup để xem lịch tuần dạng bảng, tự cập nhật từ fap.fpt.edu.vn bằng phiên đăng nhập sẵn có của bạn, rê chuột vào môn để xem đã vắng bao nhiêu, còn được vắng mấy buổi, luôn ghi rõ lần cập nhật gần nhất.
-• Chuyển máy: Xuất/Nhập dữ liệu bằng file JSON trong popup.
+• Chuyển máy: đồng bộ qua Google Drive của bạn (tuỳ chọn), hoặc Xuất/Nhập file JSON trong popup.
 
 Quyền riêng tư: extension không gửi dữ liệu đi đâu, không analytics, không tải code từ xa. Tiến độ ôn và lịch học chỉ nằm trong trình duyệt của bạn.
 
@@ -44,7 +44,7 @@ A study toolkit for FPT University students: track exam revision on the FuOverfl
 • In the image viewer: jump to any question, flag unsure ones, and "resume at question X".
 • Screenshot with the discussion panel: capture one question or the whole exam (including the answer comments) as a ZIP.
 • FAP timetable (optional): turn it on in the popup to see your week as a table, refreshed from fap.fpt.edu.vn with your existing session, hover a class to see absences so far and how many you can still miss, with the last update time always shown.
-• Move between devices: export/import a JSON file from the popup.
+• Move between devices: sync through your own Google Drive (optional), or export/import a JSON file from the popup.
 
 Privacy: no data sent anywhere, no analytics, no remote code. Your progress and timetable stay in your browser.
 
@@ -62,6 +62,9 @@ Stores the user's study progress (reviewed threads, current question, flagged qu
 **Host permissions: \*://fuoverflow.com/\*, \*://\*.fuoverflow.com/\*, \*://fuexam.me/\*, \*://\*.fuexam.me/\***
 The content scripts add the checklist checkbox, progress badges and the question-jump panel to these two forums only. The extension does not run on any other site.
 
+**identity**
+Used only for the optional Google Drive sync: when the user presses the cloud button, chrome.identity.launchWebAuthFlow opens Google's sign-in window. The extension asks for openid, email, profile (to show which account is signed in) and drive.appdata (one file in the app's hidden folder of the user's own Drive). No other Google data is accessed.
+
 **scripting**
 Used only for the optional FAP timetable: after the user presses "Bật thời khóa biểu", chrome.scripting.executeScript reads the weekly timetable from fap.fpt.edu.vn/WeeklyTimetable and the per-course attendance counts from fap.fpt.edu.vn/Report/Attendance, in a tab that the extension opens. No code is injected into any other site.
 
@@ -73,7 +76,11 @@ No. All code is packaged in the extension.
 
 ## Data usage (privacy practices form)
 
-- Collected data: "Website content" only if the user turns on the FAP timetable: their weekly class timetable and per-course attendance counts are read from fap.fpt.edu.vn and stored locally in chrome.storage.local to display in the popup. It is never transmitted. Nothing else is collected (no personally identifiable information, health, financial, authentication, personal communications, location, web history or user activity).
+- Collected data:
+  - "Website content" only if the user turns on the FAP timetable: their weekly class timetable and per-course attendance counts are read from fap.fpt.edu.vn and stored locally in chrome.storage.local to display in the popup.
+  - "Personally identifiable information" (name, email address, profile picture) and "Authentication information" (a Google access token) only if the user signs in for Google Drive sync: shown in the popup to say which account is signed in; the token is kept in memory to call the Drive API.
+  - With Drive sync on, the study data, timetable and attendance are written to the user's own Google Drive (hidden app-data folder). Nothing is sent to the developer or any other party.
+  - Nothing else is collected (no health, financial, personal communications, location, web history or user activity).
 - Certifications (tick all three):
   - I do not sell or transfer user data to third parties, outside of the approved use cases.
   - I do not use or transfer user data for purposes that are unrelated to my item's single purpose.

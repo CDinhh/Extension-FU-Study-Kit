@@ -10,7 +10,7 @@ A Manifest V3 browser extension for the [FuOverflow](https://fuoverflow.com) and
 - jump to any question while viewing exam images, and flag the ones you are unsure about;
 - **automatically screenshot every question together with its answer discussion** (zipped for you);
 - **see your FAP weekly timetable and attendance report in the popup** (optional, refreshes itself, always shows when it was last updated);
-- move your data to another computer with **Export/Import**.
+- move your data to another computer with **Google Drive sync** (optional) or **Export/Import**.
 
 > Not an official extension of FuOverflow, FuExam or FPT University.
 
@@ -91,6 +91,12 @@ Click the extension icon to see the subjects you have studied on each forum, mos
 - Exam and subject names are recorded when you open an exam or a subject page. Exams studied before
   this update, or on another computer, show as "Đề #id" under "Khác" (other) until you open them again.
 - Click a forum's name to open its home page.
+
+**Google Drive sync** (optional): press the cloud button at the top of the popup and sign in with
+Google. Study progress, thread titles, the timetable and attendance are kept in the extension's own
+hidden folder in your Drive (it cannot see any other file), synced when the popup opens and a few
+seconds after each change. A computer not signed in to FAP still shows the timetable from Drive. Click
+your avatar for the sync state, **"Đồng bộ ngay"** (sync now) or **"Đăng xuất"** (sign out).
 
 At the bottom of the popup:
 

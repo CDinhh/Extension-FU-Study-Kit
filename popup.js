@@ -345,8 +345,11 @@
     placeTip(cell);
   }
 
+  let tipFor = null; // the element the tooltip is showing for
+
   // Under the anchor when it fits, otherwise above; always inside the popup.
   function placeTip(anchor) {
+    tipFor = anchor;
     tip.hidden = false;
     const r = anchor.getBoundingClientRect();
     const view = document.documentElement;
@@ -358,16 +361,22 @@
 
   function hideTip() {
     tip.hidden = true;
+    tipFor = null;
   }
 
   // Buttons explain themselves with the same tooltip (data-tip-title + data-tip in popup.html).
+  function showTextTip(node) {
+    if (!node.dataset.tip) return;
+    tip.replaceChildren(el("strong", "pp-tip__name", node.dataset.tipTitle), el("p", "pp-tip__text", node.dataset.tip));
+    placeTip(node);
+  }
+
+  // A button whose text changed while hovered (sync state) updates its open tooltip in place.
+  const refreshTip = (node) => tipFor === node && showTextTip(node);
+
   for (const node of document.querySelectorAll("[data-tip]")) {
-    const show = () => {
-      tip.replaceChildren(el("strong", "pp-tip__name", node.dataset.tipTitle), el("p", "pp-tip__text", node.dataset.tip));
-      placeTip(node);
-    };
-    node.addEventListener("mouseenter", show);
-    node.addEventListener("focus", show);
+    node.addEventListener("mouseenter", () => showTextTip(node));
+    node.addEventListener("focus", () => showTextTip(node));
     node.addEventListener("mouseleave", hideTip);
     node.addEventListener("blur", hideTip);
   }
@@ -404,7 +413,8 @@
     $("ttWeek").textContent = ttWeekLabel(ttView);
     $("ttWeek").classList.toggle("is-current", ttView === thisWeek);
     renderAttendance(local.fapAttendance);
-    hideTip();
+    // The cells were rebuilt: drop a tooltip pinned to an old cell, keep one on a header button.
+    if (tipFor && !tipFor.isConnected) hideTip();
 
     if (!shown) {
       body.append(el("p", "pp-tt__note", "Xem lịch học FAP ngay tại đây."));
@@ -464,19 +474,36 @@
   let drive = null;
   const NO_DRIVE = "Chưa cho phép quyền Google Drive"; // same text as drive.js
 
+  // Signed in, the avatar opens a small menu (status, sync now, sign out); signed out, it signs in.
+  const needsLogin = () => !drive || drive.error === "Cần đăng nhập lại" || drive.error === NO_DRIVE;
+  const menu = $("acctMenu");
+
+  const syncStatus = (busy) =>
+    busy
+      ? "Đang đồng bộ với Google Drive…"
+      : drive.error === NO_DRIVE
+        ? "Bạn chưa cho phép extension dùng Google Drive. Bấm Đăng nhập lại và tick ô Google Drive."
+        : drive.error === "Cần đăng nhập lại"
+          ? "Phiên Google đã hết, bấm Đăng nhập lại."
+          : drive.error
+            ? `Đồng bộ lỗi: ${drive.error}`
+            : `${drive.lastSync ? `Đã đồng bộ ${ttAgo(drive.lastSync)}` : "Chưa đồng bộ"}. Tự đồng bộ khi bạn ôn đề hoặc lịch cập nhật.`;
+
   const renderAccount = async () => {
     const [{ drive: d }, { driveBusy }] = await Promise.all([chrome.storage.local.get("drive"), chrome.storage.session.get("driveBusy")]);
     drive = d?.account ? d : null;
     const btn = $("acct");
-    $("logout").hidden = !drive;
     btn.className = "pp-tt__refresh pp-acct";
     if (!drive) {
+      closeMenu();
       btn.innerHTML = CLOUD_ICON;
+      btn.setAttribute("aria-label", "Đăng nhập Google để đồng bộ");
+      btn.removeAttribute("aria-haspopup");
       btn.dataset.tipTitle = "Đồng bộ Google Drive";
       btn.dataset.tip = d?.error
         ? `Chưa đăng nhập được: ${d.error}. Bấm để thử lại.`
         : "Đăng nhập Google để lưu tiến độ ôn đề, thời khóa biểu và điểm danh lên Drive của bạn, mở máy khác là có. Dữ liệu nằm trong thư mục ẩn riêng của extension.";
-      return;
+      return refreshTip(btn);
     }
     const { email, name, picture } = drive.account;
     btn.replaceChildren();
@@ -488,21 +515,57 @@
       btn.append(el("span", "pp-acct__initial", (name || email || "?").trim()[0].toUpperCase()));
     }
     btn.classList.add(driveBusy ? "is-busy" : drive.error ? "is-err" : "is-ok");
-    btn.dataset.tipTitle = name ? `${name} · ${email}` : email;
-    btn.dataset.tip = driveBusy
-      ? "Đang đồng bộ với Google Drive…"
-      : drive.error === NO_DRIVE
-        ? "Bạn chưa cho phép extension dùng Google Drive nên chưa đồng bộ được. Bấm để đăng nhập lại và tick ô Google Drive."
-        : drive.error
-        ? `Đồng bộ lỗi: ${drive.error}. Bấm để thử lại.`
-        : `${drive.lastSync ? `Đã đồng bộ ${ttAgo(drive.lastSync)}` : "Chưa đồng bộ"}. Tự đồng bộ khi bạn ôn đề hoặc lịch cập nhật; bấm để đồng bộ ngay.`;
+    btn.setAttribute("aria-label", `Tài khoản Google: ${email}`);
+    btn.setAttribute("aria-haspopup", "menu");
+    btn.dataset.tip = ""; // the menu says it all
+    if (tipFor === btn) hideTip();
+    $("acctName").textContent = name || email;
+    $("acctEmail").textContent = name ? email : "";
+    $("acctStatus").textContent = syncStatus(driveBusy);
+    $("acctStatus").className = `pp-menu__status ${driveBusy ? "is-busy" : drive.error ? "is-err" : "is-ok"}`;
+    $("acctSync").textContent = needsLogin() ? "Đăng nhập lại" : "Đồng bộ ngay";
+    $("acctSync").disabled = !!driveBusy;
   };
 
+  function openMenu() {
+    menu.hidden = false;
+    $("acct").setAttribute("aria-expanded", "true");
+    hideTip();
+  }
+
+  function closeMenu() {
+    menu.hidden = true;
+    $("acct").setAttribute("aria-expanded", "false");
+  }
+
   $("acct").addEventListener("click", () => {
-    const login = !drive || drive.error === "Cần đăng nhập lại" || drive.error === NO_DRIVE;
+    if (!drive) {
+      $("acct").dataset.tip = "Đang mở cửa sổ đăng nhập Google…";
+      refreshTip($("acct"));
+      return chrome.runtime.sendMessage({ action: "driveLogin" }).catch(() => {});
+    }
+    menu.hidden ? openMenu() : closeMenu();
+  });
+  $("acctSync").addEventListener("click", () => {
+    const login = needsLogin();
+    // Answer the click at once; background.js confirms through driveBusy / drive a moment later.
+    $("acctStatus").textContent = login ? "Đang mở cửa sổ đăng nhập Google…" : syncStatus(true);
+    $("acctSync").disabled = true;
     chrome.runtime.sendMessage({ action: login ? "driveLogin" : "driveSync" }).catch(() => {});
   });
-  $("logout").addEventListener("click", () => chrome.runtime.sendMessage({ action: "driveLogout" }).catch(() => {}));
+  $("logout").addEventListener("click", () => {
+    closeMenu();
+    chrome.runtime.sendMessage({ action: "driveLogout" }).catch(() => {});
+  });
+  document.addEventListener("click", (e) => {
+    if (!menu.hidden && !menu.contains(e.target) && !$("acct").contains(e.target)) closeMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !menu.hidden) {
+      closeMenu();
+      $("acct").focus();
+    }
+  });
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.drive || changes.driveBusy) renderAccount();
   });

@@ -10,7 +10,7 @@ Extension trình duyệt (Manifest V3) cho hai diễn đàn [FuOverflow](https:/
 - nhảy nhanh tới câu bất kỳ khi xem ảnh đề, gắn cờ những câu chưa chắc;
 - **chụp màn hình tự động toàn bộ câu hỏi kèm khung chat thảo luận đáp án** (nén sẵn file ZIP);
 - **xem thời khóa biểu tuần và báo cáo điểm danh của FAP ngay trong popup** (tuỳ chọn, tự cập nhật, luôn ghi rõ lần cập nhật gần nhất);
-- mang dữ liệu sang máy khác bằng **Xuất/Nhập file**.
+- mang dữ liệu sang máy khác bằng **đồng bộ Google Drive** (tuỳ chọn) hoặc **Xuất/Nhập file**.
 
 > Không phải extension chính thức của FuOverflow / FuExam / Đại học FPT.
 
@@ -80,6 +80,12 @@ Bấm icon extension để xem các môn đã ôn trên từng diễn đàn, mô
 - Tên đề và tên môn được ghi lại khi bạn mở đề hoặc trang môn. Đề ôn từ trước khi cập nhật, hoặc từ máy
   khác, tạm hiện là "Đề #id" trong nhóm "Khác" cho tới khi bạn mở lại.
 - Bấm tên diễn đàn để mở trang chủ diễn đàn đó.
+
+**Đồng bộ Google Drive** (tuỳ chọn): bấm nút đám mây ở góc trên popup và đăng nhập Google. Extension
+lưu tiến độ ôn đề, tên đề, thời khóa biểu và điểm danh vào thư mục ẩn riêng của nó trên Drive của bạn
+(không đọc được file nào khác), tự đồng bộ khi mở popup và vài giây sau mỗi thay đổi. Máy chưa đăng
+nhập FAP vẫn xem được lịch lấy từ Drive. Bấm vào ảnh đại diện để xem trạng thái, **Đồng bộ ngay** hoặc
+**Đăng xuất**.
 
 Ở chân popup:
 
