@@ -237,3 +237,54 @@ test("mergeCloud: newer study entry wins, titles fill gaps, newer crawl wins", (
   assert.equal(m.fapTimetable.fetchedAt, 9);
   assert.equal(m.fapAttendance.fetchedAt, 1);
 });
+
+test("calendarEvents builds one keyed event per class from the given week on", () => {
+  const tt = {
+    fetchedAt: 1,
+    weeks: {
+      "2026-11-02": { days: [], items: [{ day: 0, slot: "2", title: "WDP301 - SE1924", time: "09h30-11h45" }] },
+      "2026-11-09": {
+        days: [],
+        items: [
+          { day: 1, slot: "2", title: "WDP301 - SE1924", time: "09h30-11h45", room: "NVH 606", teacher: "ThinhDP2" },
+          { day: 1, slot: "2", title: "WDP301 - SE1924", time: "09h30-11h45", room: "NVH 606" }, // listed twice
+          { day: 6, slot: "6", title: "MLN111 - Half1_SE1915", time: "16h10-17h40", room: "131", teacher: "-", kind: "Lịch thi" },
+          { day: 2, slot: "4", title: "EXE201 - SE1920", time: "15h00-17h15", online: true, meet: "https://meet.google.com/x" },
+          { day: 3, slot: "1", title: "NO TIME", time: "" }
+        ]
+      }
+    }
+  };
+  const ev = C.calendarEvents(tt, "2026-11-09");
+  assert.equal(ev.length, 3);
+  const [wdp, mln, exe] = ev;
+  assert.equal(wdp.key, "2026-11-10|2|WDP301|class");
+  assert.equal(wdp.summary, "WDP301 · NVH 606");
+  assert.equal(wdp.start, "2026-11-10T09:30:00+07:00");
+  assert.equal(wdp.end, "2026-11-10T11:45:00+07:00");
+  assert.match(wdp.description, /Giảng viên: ThinhDP2/);
+  assert.equal(mln.key, "2026-11-15|6|MLN111|exam");
+  assert.equal(mln.summary, "Thi MLN111 · 131");
+  assert.equal(mln.exam, true);
+  assert.doesNotMatch(mln.description, /Giảng viên/);
+  assert.equal(exe.location, "Online");
+  assert.match(exe.description, /Học online: https:\/\/meet\.google\.com\/x/);
+});
+
+test("calendar settings travel through the cloud copy, newer wins", () => {
+  const c = C.cleanCloud({ app: "fu-exam-checklist", calendar: { id: "abc@group.calendar.google.com", on: true, remind: 99999, at: 5 } });
+  assert.deepEqual(c.calendar, { id: "abc@group.calendar.google.com", on: true, classes: true, exams: true, remind: 30, remindExam: 1440, remindVia: "popup", at: 5 });
+  assert.equal(C.cleanCloud({ app: "fu-exam-checklist", calendar: { exams: false, remindExam: -1, at: 5 } }).calendar.exams, false);
+  assert.equal(C.cleanCloud({ app: "fu-exam-checklist", calendar: { id: "x y", on: true, at: 5 } }).calendar.id, null);
+  const empty = { sites: {}, threads: {}, fapTimetable: null, fapAttendance: null };
+  const m = C.mergeCloud({ ...empty, calendar: { id: null, on: false, remind: 30, at: 9 } }, { ...empty, calendar: c.calendar });
+  assert.equal(m.calendar.on, false); // the local "turned off" is newer
+});
+
+test("calendar reminder channel defaults to a notification and rejects unknown values", () => {
+  const clean = (remindVia) => C.cleanCloud({ app: "fu-exam-checklist", calendar: { remindVia, at: 5 } }).calendar.remindVia;
+  assert.equal(clean("both"), "both");
+  assert.equal(clean("email"), "email");
+  assert.equal(clean("sms"), "popup");
+  assert.equal(clean(undefined), "popup");
+});

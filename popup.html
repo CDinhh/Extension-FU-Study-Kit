@@ -14,11 +14,67 @@
           <div class="pp-menu" id="acctMenu" role="menu" hidden>
             <strong class="pp-menu__name" id="acctName"></strong>
             <span class="pp-menu__email" id="acctEmail"></span>
-            <p class="pp-menu__status" id="acctStatus" role="status"></p>
-            <div class="pp-menu__actions">
+
+            <section class="pp-menu__sec">
+              <div class="pp-menu__head">
+                <span class="pp-menu__label">Google Drive</span>
+                <button
+                  type="button"
+                  class="pp-help"
+                  aria-label="Google Drive lưu gì"
+                  data-tip-title="Đồng bộ Google Drive"
+                  data-tip="Tiến độ ôn đề, tên đề, thời khóa biểu và điểm danh được lưu vào thư mục ẩn riêng của extension trên Drive của bạn, nên mở máy khác là có. Tự đồng bộ khi mở popup và vài giây sau mỗi thay đổi. Extension không đọc được file nào khác trong Drive."
+                >?</button>
+              </div>
+              <p class="pp-menu__status" id="acctStatus" role="status"></p>
               <button type="button" class="pp-menu__btn is-primary" id="acctSync" role="menuitem">Đồng bộ ngay</button>
-              <button type="button" class="pp-menu__btn" id="logout" role="menuitem">Đăng xuất</button>
-            </div>
+            </section>
+
+            <section class="pp-menu__sec">
+              <div class="pp-menu__head">
+                <span class="pp-menu__label">Google Calendar</span>
+                <button
+                  type="button"
+                  class="pp-help"
+                  aria-label="Google Calendar hoạt động thế nào"
+                  data-tip-title="Đưa lịch học vào Google Calendar"
+                  data-tip="Buổi học và lịch thi được thêm vào một lịch riêng tên “FU Study Kit – Lịch học”, không đụng tới lịch của bạn. Lịch FAP đổi thì sự kiện tự sửa theo, buổi bị dời hoặc huỷ thì tự xoá, không tạo trùng. Xoá lịch đã thêm sẽ xoá cả lịch riêng đó."
+                >?</button>
+                <label class="pp-switch pp-menu__toggle">
+                  <input type="checkbox" role="switch" id="calOn" aria-label="Đưa lịch học vào Google Calendar" />
+                </label>
+              </div>
+              <div class="pp-menu__opts" id="calOpts" hidden>
+                <label class="pp-menu__row">
+                  <span>Buổi học</span>
+                  <span class="pp-switch"><input type="checkbox" role="switch" id="calClasses" /></span>
+                </label>
+                <label class="pp-menu__row">
+                  <span>Lịch thi</span>
+                  <span class="pp-switch"><input type="checkbox" role="switch" id="calExams" /></span>
+                </label>
+                <label class="pp-menu__row">
+                  <span>Nhắc qua</span>
+                  <select id="calVia" class="pp-remind">
+                    <option value="popup">Thông báo</option>
+                    <option value="email">Email</option>
+                    <option value="both">Thông báo + Email</option>
+                  </select>
+                </label>
+                <label class="pp-menu__row">
+                  <span>Nhắc buổi học trước</span>
+                  <select id="calRemind" class="pp-remind"></select>
+                </label>
+                <label class="pp-menu__row">
+                  <span>Nhắc lịch thi trước</span>
+                  <select id="calRemindExam" class="pp-remind"></select>
+                </label>
+                <p class="pp-menu__status" id="calStatus" role="status"></p>
+                <button type="button" class="pp-menu__btn is-danger" id="calClear" hidden>Xoá lịch đã thêm</button>
+              </div>
+            </section>
+
+            <button type="button" class="pp-menu__btn pp-menu__logout" id="logout" role="menuitem">Đăng xuất</button>
           </div>
           <button type="button" class="pp-tt__refresh" id="theme" aria-label="Đổi giao diện sáng / tối" title="Đổi giao diện sáng / tối">
             <svg viewBox="0 0 24 24" aria-hidden="true">

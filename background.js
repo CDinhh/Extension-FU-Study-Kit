@@ -1,4 +1,4 @@
-importScripts("lib/store-core.js", "lib/storage.js", "drive.js");
+importScripts("lib/store-core.js", "lib/storage.js", "drive.js", "calendar.js");
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.action === "captureTab") {
@@ -294,6 +294,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (fromExtension && message?.action === "driveLogin") driveLogin();
   if (fromExtension && message?.action === "driveSync") driveSync();
   if (fromExtension && message?.action === "driveLogout") driveLogout();
+  if (fromExtension && message?.action === "calendarEnable") calendarEnable();
+  if (fromExtension && message?.action === "calendarSync") calendarSync();
+  if (fromExtension && message?.action === "calendarClear") calendarClear();
   if (message?.action === "fapWeek" || message?.action === "fapDone") {
     onFapCrawl(message, sender).finally(() => sendResponse());
     return true;
