@@ -9,6 +9,31 @@
     return node;
   };
 
+  // Light / dark: follows the system until the header button picks one. Kept in localStorage so
+  // it applies before the first paint (chrome.storage would answer after it).
+  const THEME_KEY = "fuo-theme";
+  const readTheme = () => {
+    try {
+      return localStorage.getItem(THEME_KEY);
+    } catch {
+      return null;
+    }
+  };
+  const applyTheme = (theme) => {
+    if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+  };
+  applyTheme(readTheme());
+  $("theme").addEventListener("click", () => {
+    const now = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    const next = now === "dark" ? "light" : "dark";
+    applyTheme(next);
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {
+      // Private mode or blocked storage: the switch still works for this popup.
+    }
+  });
+
   let msgTimer = null;
   const say = (text, kind = "ok") => {
     const msg = $("msg");
@@ -262,11 +287,8 @@
   const attState = (c) => {
     const allowed = Math.floor(c.total * ATT_LIMIT);
     const left = allowed - c.absent;
-    return {
-      // A short course (under 5 sessions) allows no absence at all; say so without alarming.
-      tone: left < 0 ? "is-over" : left === 0 && allowed ? "is-edge" : "",
-      note: !c.total ? "Chưa có buổi" : left < 0 ? "Quá 20%, có thể bị cấm thi" : !allowed ? "Không được vắng" : left === 0 ? "Hết lượt vắng" : `Còn vắng được ${left} buổi`
-    };
+    // A short course (under 5 sessions) allows no absence at all; that alone is not a warning.
+    return { tone: left < 0 ? "is-over" : left === 0 && allowed ? "is-edge" : "" };
   };
 
   // One floating tooltip for every timetable cell, kept inside the popup.
@@ -275,39 +297,48 @@
   tip.hidden = true;
   document.body.append(tip);
 
+  // A label : value list; rows without a value are skipped.
+  const kvList = (rows) => {
+    const dl = el("dl", "pp-tip__list");
+    for (const [label, value, cls] of rows) {
+      if (!value) continue;
+      dl.append(el("dt", "", label), el("dd", cls || "", value));
+    }
+    return dl;
+  };
+
   function showTip(cell, item) {
     const [code, group] = item.title.split(" - ");
     const c = attByCode[`${code}|${group}`] || attByCode[code];
-    tip.replaceChildren(el("strong", "pp-tip__name", c?.name || item.title));
-    // The cell cuts long names, so the tooltip repeats every detail in full.
-    const place = [item.room, item.teacher].filter((v) => v && v !== "-");
-    tip.append(
-      el("span", "pp-tip__meta", [item.kind, c ? `${c.code} · ${c.group}` : item.title].filter(Boolean).join(" · ")),
-      el("span", "pp-tip__meta", [item.time, ...place, item.online && "Online"].filter(Boolean).join(" · "))
-    );
+    const real = (v) => (v && v !== "-" ? v : "");
     const session = item.attendance || { yes: "Có mặt", no: "Vắng" }[item.attended];
-    if (session) tip.append(el("span", `pp-tip__session is-${item.attended || "none"}`, `Buổi này: ${session}`));
-    if (c) {
-      const st = attState(c);
+    // The cell cuts long names, so the tooltip repeats every detail in full.
+    tip.replaceChildren(
+      el("strong", "pp-tip__name", c?.name || code),
+      kvList([
+        ["Loại", /thi|exam/i.test(item.kind || "") ? "Lịch thi" : item.kind],
+        ["Mã môn", code],
+        ["Lớp", group],
+        ["Thời gian", item.time],
+        ["Phòng", real(item.room)],
+        ["Giảng viên", real(item.teacher)],
+        ["Hình thức", item.online && "Online"],
+        ["Buổi này", session, `is-${item.attended || "none"}`]
+      ])
+    );
+    if (c?.total) {
       const allowed = Math.floor(c.total * ATT_LIMIT);
-      const box = el("div", ["pp-tip__att", st.tone].filter(Boolean).join(" "));
-      const head = el("div", "pp-tip__head");
-      head.append(el("span", "pp-tip__label", "Điểm danh"), el("span", "pp-tip__note", st.note));
-      box.append(head);
-      // One box per absence the course allows; filled ones are absences already used.
-      if (allowed && allowed <= 12) {
-        const pips = el("div", "pp-tip__pips");
-        for (let i = 0; i < Math.max(allowed, c.absent); i++) pips.append(el("i", i < c.absent ? "is-used" : ""));
-        box.append(pips);
-      }
-      const detail = !c.total
-        ? ""
-        : !allowed
-        ? `Môn chỉ có ${c.total} buổi nên vắng 1 buổi là quá 20%.${c.absent ? ` Đã vắng ${c.absent} buổi.` : ""}`
-        : c.absent > allowed
-          ? `Đã vắng ${c.absent} buổi, quá mức ${allowed} buổi được phép (20% của ${c.total} buổi).`
-          : `Đã vắng ${c.absent} trên ${allowed} buổi được phép (20% của ${c.total} buổi).`;
-      if (detail) box.append(el("span", "pp-tip__meta", detail));
+      const left = allowed - c.absent;
+      const tone = attState(c).tone || "is-ok";
+      const box = el("div", "pp-tip__att");
+      box.append(
+        el("span", "pp-tip__label", "Điểm danh cả môn"),
+        kvList([
+          ["Đã vắng", `${c.absent}/${c.total} buổi (${Math.round((c.absent / c.total) * 100)}%)`],
+          ["Được vắng tối đa", `${allowed} buổi (20%)`],
+          ["Còn được vắng", left < 0 ? `Vượt ${-left} buổi, có thể bị cấm thi` : `${left} buổi`, tone]
+        ])
+      );
       tip.append(box);
     }
     tip.hidden = false;

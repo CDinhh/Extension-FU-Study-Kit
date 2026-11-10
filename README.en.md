@@ -71,11 +71,13 @@ toolbar → **"Cho phép"** (allow). The extension only captures when you press 
 - If your FAP session has expired, the extension opens a FAP tab so you can sign in (any sign-in
   method works), then the timetable updates by itself.
 - **Attendance:** after the timetable, the extension goes through each course on the attendance
-  report page for the current term. Hover (or Tab to) a class in the timetable to see the full course
-  name, whether you attended that session, an "absence allowance" row of boxes (one per absence allowed, filled ones already used)
-  (FPT allows at most 20% of sessions): **"Còn vắng được N buổi"** (N more allowed), **"Hết lượt vắng"**
-  (none left) or **"Quá 20%"** (over the limit). Classes of a course with no absences left get an
-  amber bottom edge; over the limit, a red one.
+  report page for the current term. Hover (or Tab to) a class in the timetable to see each detail on
+  its own labelled line: course code, class, time, room, lecturer, whether you attended that session,
+  and the course's attendance: **"Đã vắng"** (absences, e.g. 3/20 sessions, 15%), **"Được vắng tối đa"**
+  (the 20% allowance) and **"Còn được vắng"** (absences left). Classes of a course with no absences
+  left get an amber bottom edge; over the limit, a red one.
+- **Light / dark theme:** follows your system; the round button at the top of the popup switches it
+  and the choice is remembered.
 
 ### Popup: studied subjects, Export/Import
 
