@@ -167,19 +167,17 @@ test("diffCounts ignores key order (chrome.storage returns keys sorted)", () => 
   assert.equal(C.sameData(local.fuexam, site()), false);
 });
 
-test("sync items round-trip with every item under 7500 bytes", () => {
-  const s = C.emptySite();
-  for (let t = 0; t < 100; t++) {
-    s.flags[String(1000 + t)] = {};
-    for (let q = 0; q < 30; q++) s.flags[String(1000 + t)][String(q)] = { on: true, at: 1700000000000 + q };
-    s.checklist[String(1000 + t)] = { done: true, at: 1700000000000 };
-  }
-  const items = C.toSyncItems("fuexam", s);
-  for (const [k, v] of Object.entries(items)) {
-    assert.match(k, /^s:(fuoverflow|fuexam):(checklist|progress|flags):\d+$/);
-    assert.ok(JSON.stringify(v).length <= 7500, k);
-  }
-  assert.deepEqual(C.fromSyncItems(items).fuexam, s);
+test("fromSyncItems joins the old Chrome Sync shards and skips unknown keys", () => {
+  const items = {
+    "s:fuexam:checklist:0": { 1: { done: true, at: 5 } },
+    "s:fuexam:checklist:1": { 2: { done: true, at: 6 } },
+    "s:fuexam:flags:0": { 1: { 3: { on: true, at: 7 } } },
+    "s:other:checklist:0": { 9: { done: true, at: 1 } },
+    unrelated: 1
+  };
+  assert.deepEqual(C.fromSyncItems(items), {
+    fuexam: { checklist: { 1: { done: true, at: 5 }, 2: { done: true, at: 6 } }, progress: {}, flags: { 1: { 3: { on: true, at: 7 } } } }
+  });
 });
 
 test("studiedBySubject groups touched threads by course code, newest first", () => {

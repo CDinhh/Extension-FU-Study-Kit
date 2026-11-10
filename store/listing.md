@@ -29,7 +29,7 @@ Bộ công cụ học tập cho sinh viên FPT: theo dõi việc ôn đề thi t
 • Trong khung xem ảnh đề: nhảy nhanh tới câu bất kỳ, gắn cờ câu chưa chắc, "Tiếp tục câu X" để quay lại chỗ đang học.
 • Chụp màn hình kèm khung chat: chụp từng câu hoặc cả đề (kèm phần bình luận đáp án) và tải về một file ZIP.
 • Thời khóa biểu FAP (tuỳ chọn): bật trong popup để xem lịch tuần dạng bảng, tự cập nhật từ fap.fpt.edu.vn bằng phiên đăng nhập sẵn có của bạn, luôn ghi rõ lần cập nhật gần nhất.
-• Chuyển máy: Xuất/Nhập dữ liệu bằng file JSON trong popup. Trên Chrome có bật Sync, dữ liệu tự đồng bộ giữa các máy.
+• Chuyển máy: Xuất/Nhập dữ liệu bằng file JSON trong popup.
 
 Quyền riêng tư: extension không gửi dữ liệu đi đâu, không analytics, không tải code từ xa. Tiến độ ôn và lịch học chỉ nằm trong trình duyệt của bạn.
 
@@ -44,7 +44,7 @@ A study toolkit for FPT University students: track exam revision on the FuOverfl
 • In the image viewer: jump to any question, flag unsure ones, and "resume at question X".
 • Screenshot with the discussion panel: capture one question or the whole exam (including the answer comments) as a ZIP.
 • FAP timetable (optional): turn it on in the popup to see your week as a table, refreshed from fap.fpt.edu.vn with your existing session, with the last update time always shown.
-• Move between devices: export/import a JSON file from the popup. On Chrome with Sync on, data follows you automatically.
+• Move between devices: export/import a JSON file from the popup.
 
 Privacy: no data sent anywhere, no analytics, no remote code. Your progress and timetable stay in your browser.
 
@@ -57,7 +57,7 @@ A study companion for FPT University students: track which exam threads and ques
 ## Permission justifications
 
 **storage**
-Stores the user's study progress (reviewed threads, current question, flagged questions) in chrome.storage.local, mirrored to chrome.storage.sync so it follows the user between their own devices when Chrome Sync is on.
+Stores the user's study progress (reviewed threads, current question, flagged questions) in chrome.storage.local on the user's device. Nothing is synced or sent anywhere; the user moves data between devices with the export/import file.
 
 **Host permissions: \*://fuoverflow.com/\*, \*://\*.fuoverflow.com/\*, \*://fuexam.me/\*, \*://\*.fuexam.me/\***
 The content scripts add the checklist checkbox, progress badges and the question-jump panel to these two forums only. The extension does not run on any other site.

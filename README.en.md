@@ -10,7 +10,7 @@ A Manifest V3 browser extension for the [FuOverflow](https://fuoverflow.com) and
 - jump to any question while viewing exam images, and flag the ones you are unsure about;
 - **automatically screenshot every question together with its answer discussion** (zipped for you);
 - **see your FAP weekly timetable in the popup** (optional, refreshes itself, always shows when it was last updated);
-- move your data to another computer with **Export/Import**, or let **Chrome Sync** do it.
+- move your data to another computer with **Export/Import**.
 
 > Not an official extension of FuOverflow, FuExam or FPT University.
 
@@ -71,7 +71,7 @@ toolbar → **"Cho phép"** (allow). The extension only captures when you press 
 - If your FAP session has expired, the extension opens a FAP tab so you can sign in (any sign-in
   method works), then the timetable updates by itself.
 
-### Popup: studied subjects, Export/Import, sync
+### Popup: studied subjects, Export/Import
 
 Click the extension icon to see the subjects you have studied on each forum, most recent first.
 
@@ -93,8 +93,8 @@ At the bottom of the popup:
   donate banner at the bottom of the screen) and "Ẩn popup" on FuOverflow (the "join the FuOverflow
   community" box and the "Công cụ hỗ trợ học tập" promo, closed with the page's own close button).
   They take effect immediately, no reload needed.
-- **Chrome**: when you are signed in to Chrome with Sync on, data syncs between your computers.
-  **Brave**: sync is not available, use Export/Import.
+- Data stays on this computer; the extension does not use Chrome Sync. To switch computers, export on
+  the old one and import on the new one.
 
 ## Installation (Brave / Chrome)
 

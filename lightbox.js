@@ -784,7 +784,7 @@
       }
     });
 
-    // Another tab (or Chrome Sync) changed this site's data: refresh flags.
+    // Another tab (or an import) changed this site's data: refresh flags.
     const onStateChanged = (event) => {
       if (event.source !== window || event.data?.source !== "fuo-isolated") return;
       if (event.data.action !== "stateChanged") return;

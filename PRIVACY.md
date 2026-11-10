@@ -1,6 +1,6 @@
 # Chính sách quyền riêng tư / Privacy Policy
 
-**FU Study Kit: Exam Checklist & FAP Timetable** · cập nhật / last updated: 2026-11-10
+**FU Study Kit: Exam Checklist & FAP Timetable** · cập nhật / last updated: 2026-11-11
 
 Đây không phải extension chính thức của FuOverflow / FuExam.
 This is not an official FuOverflow / FuExam extension.
@@ -24,20 +24,19 @@ Extension chỉ lưu tiến độ ôn đề của bạn:
 Dữ liệu chỉ gồm mã số thread, số câu và thời điểm thay đổi. Không có tên tài khoản, nội dung bài
 viết, ảnh đề hay lịch sử duyệt web.
 
-Dữ liệu nằm trong `chrome.storage` của trình duyệt:
-
-- `chrome.storage.local`: trên máy của bạn;
-- `chrome.storage.sync`: nếu bạn đăng nhập Chrome và bật Chrome Sync, trình duyệt tự đồng bộ dữ
-  liệu này giữa các máy của bạn qua tài khoản Google của bạn. Việc đồng bộ do Chrome thực hiện, extension
-  không nhận được bản sao nào. Trong Brave, phần này chỉ nằm trên máy.
+Dữ liệu chỉ nằm trong `chrome.storage.local`, trên máy của bạn. Extension không dùng Chrome Sync; muốn
+chuyển sang máy khác thì dùng Xuất/Nhập file. (Bản 2.0 trở về trước có sao chép sang `chrome.storage.sync`;
+bản này chuyển phần đó về máy một lần rồi xoá khỏi `chrome.storage.sync`.)
 
 Tốc độ chụp màn hình và vị trí các vùng che đáp án được lưu trong `localStorage` của trang diễn đàn.
 Các công tắc ẩn banner/popup của diễn đàn được lưu trong `chrome.storage.local`.
+Để popup liệt kê được những gì bạn đã ôn, tên và môn (tên diễn đàn môn và link) của các đề bạn đã ôn
+cũng được lưu trong `chrome.storage.local`, chỉ trên máy này và không nằm trong file xuất.
 
 **Thời khóa biểu FAP (tuỳ chọn, tắt mặc định):** khi bạn bấm "Bật thời khóa biểu", extension mở trang
 `fap.fpt.edu.vn/WeeklyTimetable` trong một tab bằng phiên đăng nhập sẵn có của bạn, đọc bảng lịch
 của các tuần trong kỳ (môn, giờ, phòng, giảng viên, điểm danh, link học online) rồi đóng tab. Lịch chỉ được lưu trong
-`chrome.storage.local` trên máy bạn, không đồng bộ, không nằm trong file xuất và không gửi đi đâu.
+`chrome.storage.local` trên máy bạn, không nằm trong file xuất và không gửi đi đâu.
 Extension không đọc mật khẩu, cookie hay trang FAP nào khác; nếu FAP đòi đăng nhập, bạn tự đăng nhập
 trong tab đó.
 
@@ -51,7 +50,7 @@ duyệt và tải thẳng vào máy bạn.
 
 | Quyền | Lý do |
 |---|---|
-| `storage` | Lưu tiến độ ôn đề (local, và Chrome Sync nếu bạn bật). |
+| `storage` | Lưu tiến độ ôn đề và thời khóa biểu trên máy (`chrome.storage.local`). |
 | Truy cập `fuoverflow.com`, `fuexam.me` | Hiện checkbox, nhãn tiến độ và panel nhảy câu trên hai diễn đàn này. Extension không chạy trên trang nào khác. |
 | `scripting` + truy cập `fap.fpt.edu.vn` (tuỳ chọn, chỉ xin khi bạn bấm "Bật thời khóa biểu") | Đọc bảng lịch tuần từ tab FAP để hiện trong popup. |
 | `<all_urls>` (tuỳ chọn, chỉ xin khi bạn bấm "Cho phép chụp màn hình") | Trình duyệt chỉ cho phép `chrome.tabs.captureVisibleTab` khi có quyền này. Chỉ dùng để chụp tab diễn đàn đang mở khi bạn bấm nút chụp. |
@@ -85,23 +84,21 @@ Only your study progress:
 It consists of thread ids, question numbers and timestamps only. No account names, post content,
 exam images or browsing history.
 
-It lives in the browser's `chrome.storage`:
-
-- `chrome.storage.local`: on your device;
-- `chrome.storage.sync`: if you are signed in to Chrome with sync turned on, Chrome syncs this
-  data between your own devices through your Google account. Chrome does the syncing; the
-  extension never receives a copy. In Brave this stays on the device.
+It lives only in `chrome.storage.local`, on your device. The extension does not use Chrome Sync; to
+move to another device, use Export/Import. (Version 2.0 and earlier mirrored it to
+`chrome.storage.sync`; this version moves that copy back to the device once and then clears
+`chrome.storage.sync`.)
 
 The capture speed and the answer-cover positions are kept in the forum page's `localStorage`.
 The switches that hide the forums' banner/popup are kept in `chrome.storage.local`.
 So the popup can list what you studied, the title and subject (forum name and link) of each thread
-you studied are also kept in `chrome.storage.local`, on this device only: they are not synced and
-not included in the export file.
+you studied are also kept in `chrome.storage.local`, on this device only, and are not included in
+the export file.
 
 **FAP timetable (optional, off by default):** when you press "Bật thời khóa biểu", the extension
 opens `fap.fpt.edu.vn/WeeklyTimetable` in a tab using your existing session, reads the weekly tables
 of the term (class, time, room, lecturer, attendance, online-class link) and closes the tab. The timetable is
-kept only in `chrome.storage.local` on your device; it is not synced, not included in exports and
+kept only in `chrome.storage.local` on your device; it is not included in exports and
 never sent anywhere. The extension does not read passwords, cookies or any other FAP page; if FAP
 asks you to sign in, you do that yourself in that tab.
 
@@ -115,7 +112,7 @@ downloaded straight to your device.
 
 | Permission | Why |
 |---|---|
-| `storage` | Save study progress (local, plus Chrome Sync if you enabled it). |
+| `storage` | Save study progress and the timetable on your device (`chrome.storage.local`). |
 | Access to `fuoverflow.com`, `fuexam.me` | Show checkboxes, progress badges and the question-jump panel on these two forums. The extension runs on no other site. |
 | `scripting` + access to `fap.fpt.edu.vn` (optional, requested only when you press "Bật thời khóa biểu") | Read the weekly timetable from a FAP tab to show it in the popup. |
 | `<all_urls>` (optional, requested only when you press "Cho phép chụp màn hình") | Chrome allows `chrome.tabs.captureVisibleTab` only with this permission. It is used only to capture the open forum tab when you press a capture button. |

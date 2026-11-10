@@ -133,12 +133,6 @@
     }
   };
 
-  const renderSyncError = async () => {
-    const err = await FuoStorage.getSyncError();
-    const box = $("syncError");
-    box.hidden = !err;
-    if (err) box.textContent = `Chrome Sync đang lỗi (${err}). Dữ liệu vẫn lưu trên máy này; dùng Xuất/Nhập file để chuyển máy.`;
-  };
 
   const renderPermission = async () => {
     $("perm").hidden = await chrome.permissions.contains(ALL_URLS);
@@ -412,6 +406,5 @@
   chrome.permissions.onRemoved.addListener(() => (renderPermission(), renderTimetable()));
   FuoStorage.onSiteChanged(() => renderSites());
   renderSites().then(renderTimetable);
-  renderSyncError();
   renderPermission();
 })();

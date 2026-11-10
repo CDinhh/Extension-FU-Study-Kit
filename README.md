@@ -10,7 +10,7 @@ Extension trình duyệt (Manifest V3) cho hai diễn đàn [FuOverflow](https:/
 - nhảy nhanh tới câu bất kỳ khi xem ảnh đề, gắn cờ những câu chưa chắc;
 - **chụp màn hình tự động toàn bộ câu hỏi kèm khung chat thảo luận đáp án** (nén sẵn file ZIP);
 - **xem thời khóa biểu tuần của FAP ngay trong popup** (tuỳ chọn, tự cập nhật, luôn ghi rõ lần cập nhật gần nhất);
-- mang dữ liệu sang máy khác bằng **Xuất/Nhập file**, hoặc tự đồng bộ qua **Chrome Sync**.
+- mang dữ liệu sang máy khác bằng **Xuất/Nhập file**.
 
 > Không phải extension chính thức của FuOverflow / FuExam / Đại học FPT.
 
@@ -63,7 +63,7 @@ Khi mở ảnh đề, cột bên phải có panel điều khiển:
 - Dòng trạng thái luôn ghi lần cập nhật gần nhất. Mở popup mà lịch đã cũ hơn 1 giờ thì lịch tự làm mới, hoặc bấm nút làm mới.
 - Hết phiên FAP thì extension mở tab FAP để bạn đăng nhập (cách nào cũng được), xong lịch tự cập nhật.
 
-### Popup: môn đã ôn, Xuất/Nhập, đồng bộ
+### Popup: môn đã ôn, Xuất/Nhập
 
 Bấm icon extension để xem các môn đã ôn trên từng diễn đàn, môn ôn gần nhất đứng đầu.
 
@@ -83,8 +83,7 @@ Bấm icon extension để xem các môn đã ôn trên từng diễn đàn, mô
   dưới đáy màn hình) và "Ẩn popup" của FuOverflow (hộp "Tham gia cộng đồng FuOverflow" và popup quảng
   cáo "Công cụ hỗ trợ học tập", được tự đóng bằng nút đóng của chính trang). Bật/tắt có tác dụng ngay,
   không cần F5.
-- **Chrome**: nếu đăng nhập Chrome và bật Sync, dữ liệu tự đồng bộ giữa các máy.
-  **Brave**: không đồng bộ được, dùng Xuất/Nhập file.
+- Dữ liệu chỉ lưu trên máy, extension không dùng Chrome Sync. Muốn chuyển máy thì Xuất ở máy cũ, Nhập ở máy mới.
 
 ## Cài đặt (Brave / Chrome)
 

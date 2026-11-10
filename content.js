@@ -258,7 +258,7 @@
     if (area === "local" && changes.prefs) applyPrefs(changes.prefs.newValue);
   });
 
-  // --- Titles and subjects of studied threads, for the popup's list. Local only: not synced or exported. ---
+  // --- Titles and subjects of studied threads, for the popup's list. Local only, not exported. ---
   // shortcut: entries are never pruned (~100 bytes each), add pruning if someone studies thousands of threads.
   const metaKey = `threads:${siteId}`;
   const clean = (node) => (node ? node.textContent.replace(/\s+/g, " ").trim().slice(0, 200) : "");
@@ -332,7 +332,7 @@
     };
   };
 
-  // Lightbox reports every slide change; batch them so chrome.storage.sync's write quota holds.
+  // Lightbox reports every slide change; batch them so storage is not rewritten on every slide.
   const progressTimers = {};
   const setProgress = (id, current, total) => {
     if (!alive()) return showStaleNotice();
