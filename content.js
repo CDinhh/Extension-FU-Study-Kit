@@ -217,22 +217,32 @@
   };
 
   // --- Optional page clean-up, switched from the popup (chrome.storage.local "prefs") ---
-  // hideDonate: FuExam's floating donate banner. hideCommunity: FuOverflow's "join the community" popup.
+  // hideDonate: FuExam's floating donate banner. hideCommunity: FuOverflow's pop-ups (see POPUPS).
   let hideCommunity = false;
-  let watchedOverlay = null;
+  const watchedPopups = new Set();
 
-  // That popup locks the page while open, so let the site's own close button run its cleanup.
+  // [element id, class it gets while shown, its close button]. Each one locks page scrolling while
+  // open, so we press the site's own close button and let its cleanup run.
+  const POPUPS = [
+    ["fuoFbVerifyOverlay", "fuo-fbv--show", "fuoFbvClose"], // "join the community" (Facebook verify)
+    ["fuoPromoPopup", "is-active", "fuoPromoClose"] // "Công cụ hỗ trợ học tập" promo
+  ];
+
   const closeCommunity = () => {
-    const overlay = document.getElementById("fuoFbVerifyOverlay");
-    if (hideCommunity && overlay?.classList.contains("fuo-fbv--show")) document.getElementById("fuoFbvClose")?.click();
+    if (!hideCommunity) return;
+    for (const [id, shown, close] of POPUPS) {
+      if (document.getElementById(id)?.classList.contains(shown)) document.getElementById(close)?.click();
+    }
   };
 
-  // The overlay sits in the DOM from the start and is shown later by class/style changes.
+  // The pop-ups sit in the DOM from the start and are shown later by class/style changes.
   const watchCommunity = () => {
-    const overlay = document.getElementById("fuoFbVerifyOverlay");
-    if (!overlay || overlay === watchedOverlay) return;
-    watchedOverlay = overlay;
-    new MutationObserver(closeCommunity).observe(overlay, { attributes: true, attributeFilter: ["class", "style"] });
+    for (const [id] of POPUPS) {
+      const popup = document.getElementById(id);
+      if (!popup || watchedPopups.has(popup)) continue;
+      watchedPopups.add(popup);
+      new MutationObserver(closeCommunity).observe(popup, { attributes: true, attributeFilter: ["class", "style"] });
+    }
     closeCommunity();
   };
 
