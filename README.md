@@ -128,7 +128,7 @@ Nâng cấp từ bản cũ:
 
 Extension không có máy chủ riêng, không gửi dữ liệu cho tác giả hay bên thứ ba, không analytics, không tải
 code từ xa. Dữ liệu nằm trên máy bạn; chỉ khi bạn tự bật, extension mới đọc FAP và lưu vào Google Drive /
-Google Calendar của chính bạn. Chi tiết: [PRIVACY.md](PRIVACY.md).
+Google Calendar của chính bạn. Chi tiết: [chính sách quyền riêng tư](https://cdinhh.github.io/Extension-FU-Study-Kit/vi/privacy.html).
 
 ## Phát triển
 

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FU Study Kit</title>
+    <meta name="description" content="A free, open source browser extension for FPT University students: track exam revision on FuOverflow and FuExam, and see your FAP timetable, exams and attendance in the popup.">
+    <link rel="canonical" href="https://cdinhh.github.io/Extension-FU-Study-Kit/">
+    <link rel="alternate" hreflang="en" href="https://cdinhh.github.io/Extension-FU-Study-Kit/">
+    <link rel="alternate" hreflang="vi" href="https://cdinhh.github.io/Extension-FU-Study-Kit/vi/">
+    <meta property="og:title" content="FU Study Kit">
+    <meta property="og:description" content="Exam revision checklist for FuOverflow and FuExam, and your FAP timetable, exams and attendance in one popup.">
+    <meta property="og:image" content="https://cdinhh.github.io/Extension-FU-Study-Kit/logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
+    <script src="theme.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site-head">
+        <div class="wrap">
+            <a class="mark" href="./"><img src="logo.png" alt="FU Study Kit" width="32" height="32"><span>FU Study Kit</span></a>
+            <nav class="nav" aria-label="Main">
+                <a href="#features">Features</a>
+                <a href="privacy.html">Privacy</a>
+                <a class="lang" href="vi/" hreflang="vi" lang="vi">Tiếng Việt</a>
+            </nav>
+            <a class="head-btn" href="https://github.com/CDinhh/Extension-FU-Study-Kit" aria-label="GitHub repository" title="GitHub repository"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.23 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.37.81 1.1.81 2.22v3.29c0 .32.21.7.82.58A12 12 0 0 0 12 .3"/></svg></a>
+            <button class="theme-toggle" type="button" hidden aria-pressed="false" aria-label="Dark mode" title="Dark mode"><i class="fa-solid fa-moon" aria-hidden="true"></i><i class="fa-solid fa-sun" aria-hidden="true"></i></button>
+        </div>
+    </header>
+
+    <main id="main">
+        <section class="hero">
+            <div class="wrap">
+                <div>
+                    <h1>Revise smarter, and never miss a class or an exam.</h1>
+                    <p class="lede">A browser extension for FPT University students. Track which exams you have revised on FuOverflow and FuExam, and see your FAP timetable, exams and attendance right in the popup.</p>
+                    <div class="cta">
+                        <a class="btn btn-primary" href="#install"><i class="fa-solid fa-download" aria-hidden="true"></i>Install</a>
+                        <a class="btn btn-ghost" href="#permissions">Google permissions</a>
+                    </div>
+                    <p class="fine">Free and open source. Works in Chrome, Edge, Brave and other Chromium browsers. The FAP timetable and Google sign-in are optional.</p>
+                </div>
+
+                <div class="mock" role="img" aria-label="Illustration of the extension popup: a weekly timetable with an exam slot, a tooltip showing a course's attendance, and the subjects revised on FuOverflow.">
+                    <div class="mock-head">
+                        <img src="logo.png" alt="" width="24" height="24">
+                        FU Study Kit
+                        <span class="sync-pill"><i class="fa-solid fa-rotate" aria-hidden="true"></i>Synced</span>
+                    </div>
+                    <div class="mock-tt">
+                        <span></span>
+                        <span class="day">Mon</span>
+                        <span class="day today">Today</span>
+                        <span class="day">Wed</span>
+                        <span class="day">Thu</span>
+                        <span class="slot">Slot 2</span>
+                        <div class="c"><b>WDP301</b>NVH 606</div>
+                        <div class="c empty"></div>
+                        <div class="c empty"></div>
+                        <div class="c"><b>WDP301</b>NVH 606</div>
+                        <span class="slot">Slot 3</span>
+                        <div class="c empty"></div>
+                        <div class="c hover"><b>MLN122</b>NVH 404</div>
+                        <div class="c empty"></div>
+                        <div class="c empty"></div>
+                        <span class="slot">Slot 6</span>
+                        <div class="c empty"></div>
+                        <div class="c empty"></div>
+                        <div class="c empty"></div>
+                        <div class="c exam"><i>EXAM</i><b>MLN111</b>Room 131</div>
+                    </div>
+                    <div class="mock-tip">
+                        <b>Political economics of Marxism–Leninism</b>
+                        <span>Absent <em>1/10 sessions (10%)</em></span>
+                        <span>Allowed <em>2 sessions (20%)</em></span>
+                        <span>Can still miss <em class="ok">1 session</em></span>
+                    </div>
+                    <div class="mock-sites">
+                        FuOverflow
+                        <span class="chip on">MLN122 <span>3</span></span>
+                        <span class="chip">SDN302 <span>1</span></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section alt" id="features">
+            <div class="wrap">
+                <div class="section-head in">
+                    <h2>Features</h2>
+                    <p>Everything works without an account. Google sign-in only adds syncing between computers and Google Calendar.</p>
+                </div>
+                <div class="bento">
+                    <article class="tile wide in">
+                        <i class="icon fa-solid fa-calendar-days" aria-hidden="true"></i>
+                        <h3>FAP timetable in the popup</h3>
+                        <p>Every week of the term, past and upcoming, read from FAP with your own session. Exams stand out, and a status line always says when it was last updated.</p>
+                    </article>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-user-check" aria-hidden="true"></i>
+                        <h3>Attendance at a glance</h3>
+                        <p>Hover a class to see how many sessions you have missed and how many you can still miss before the 20% limit.</p>
+                    </article>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-circle-check" aria-hidden="true"></i>
+                        <h3>Revision checklist</h3>
+                        <p>Tick the exams you have finished, right in the FuOverflow and FuExam thread lists.</p>
+                    </article>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-forward" aria-hidden="true"></i>
+                        <h3>Pick up where you left off</h3>
+                        <p>See which exams you are studying and the question you reached, then jump back to it.</p>
+                    </article>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-flag" aria-hidden="true"></i>
+                        <h3>Jump and flag</h3>
+                        <p>Jump to any question in the image viewer and flag the ones you are unsure about.</p>
+                    </article>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-eye-slash" aria-hidden="true"></i>
+                        <h3>Cover the answer</h3>
+                        <p>Put a frosted cover over the answer to test yourself, remembered per exam.</p>
+                    </article>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-camera" aria-hidden="true"></i>
+                        <h3>Screenshots with discussion</h3>
+                        <p>Capture every question together with its answer discussion, zipped for you.</p>
+                    </article>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-cloud" aria-hidden="true"></i>
+                        <h3>Sync through Google Drive</h3>
+                        <p>Progress, timetable and attendance follow you to another computer, even one not signed in to FAP.</p>
+                    </article>
+                    <article class="tile span in">
+                        <i class="icon fa-solid fa-calendar-plus" aria-hidden="true"></i>
+                        <h3>Classes in Google Calendar</h3>
+                        <p>Classes and exams go into a separate calendar that follows FAP: changed classes are updated, cancelled ones removed, never duplicated. Reminders by notification, email or both.</p>
+                    </article>
+                    <article class="tile in">
+                        <i class="icon fa-solid fa-file-export" aria-hidden="true"></i>
+                        <h3>Export and import</h3>
+                        <p>Move your progress with a JSON file, no account needed.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="sync">
+            <div class="wrap">
+                <div class="section-head in">
+                    <h2>Where your data is stored</h2>
+                    <p>Your data stays in your browser. If you sign in, the extension also keeps a copy in a hidden folder of your own Google Drive and talks to Google directly.</p>
+                </div>
+                <div class="flow in">
+                    <div class="node">
+                        <i class="icon fa-solid fa-laptop" aria-hidden="true"></i>
+                        <strong>Your laptop</strong>
+                        <small>FU Study Kit</small>
+                    </div>
+                    <div class="pipe" aria-hidden="true"></div>
+                    <div class="node home">
+                        <i class="icon fa-solid fa-cloud" aria-hidden="true"></i>
+                        <strong>Your Google Drive</strong>
+                        <small>One file in the extension's hidden app folder. You can delete it at any time.</small>
+                    </div>
+                    <div class="pipe rev" aria-hidden="true"></div>
+                    <div class="node">
+                        <i class="icon fa-solid fa-graduation-cap" aria-hidden="true"></i>
+                        <strong>A school computer</strong>
+                        <small>FU Study Kit</small>
+                    </div>
+                </div>
+                <p class="flow-note in"><b>The developer cannot see your data.</b> The extension has no server, analytics or ads.</p>
+            </div>
+        </section>
+
+        <section class="section alt" id="permissions">
+            <div class="wrap">
+                <div class="section-head in">
+                    <h2>Google permissions</h2>
+                    <p>Google asks for these only if you sign in, and for Calendar only when you turn it on.</p>
+                </div>
+                <div class="perm">
+                    <article class="in">
+                        <i class="icon fa-solid fa-user" aria-hidden="true"></i>
+                        <code>openid email profile</code>
+                        <h3>Name, email and profile photo</h3>
+                        <p>Shown in the popup so you can see which account is syncing.</p>
+                    </article>
+                    <article class="in">
+                        <i class="icon fa-solid fa-file-lines" aria-hidden="true"></i>
+                        <code>drive.appdata</code>
+                        <h3>Only the extension's own app folder</h3>
+                        <p>Lets the extension keep one file, "fu-study-kit.json", in a hidden folder of your Drive. It cannot see or change your other Drive files.</p>
+                    </article>
+                    <article class="in">
+                        <i class="icon fa-solid fa-calendar-plus" aria-hidden="true"></i>
+                        <code>calendar.app.created</code>
+                        <h3>Only the calendar it creates</h3>
+                        <p>Lets the extension create "FU Study Kit – Lịch học" and manage its events. It cannot read or change your other calendars.</p>
+                    </article>
+                </div>
+                <p class="more in">See the <a href="privacy.html">privacy policy</a> for details.</p>
+            </div>
+        </section>
+
+        <section class="section" id="install">
+            <div class="wrap">
+                <div class="section-head in">
+                    <h2>Install</h2>
+                    <p>The extension is installed from its source code. It takes a minute.</p>
+                </div>
+                <ol class="steps in">
+                    <li><b>Download</b>Download the ZIP and unzip it.</li>
+                    <li><b>Open extensions</b>Go to <code>chrome://extensions</code> and turn on Developer mode.</li>
+                    <li><b>Load it</b>Click "Load unpacked" and choose the unzipped folder.</li>
+                    <li><b>Turn things on</b>Open a forum page, or click the cat icon to turn on the FAP timetable and Google sync.</li>
+                </ol>
+                <div class="steps-cta cta">
+                    <a class="btn btn-primary" href="https://github.com/CDinhh/Extension-FU-Study-Kit/archive/refs/tags/v2.1.0.zip"><i class="fa-solid fa-download" aria-hidden="true"></i>Download v2.1.0</a>
+                    <a class="btn btn-ghost" href="https://github.com/CDinhh/Extension-FU-Study-Kit"><i class="fa-solid fa-code" aria-hidden="true"></i>Source code</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-foot">
+        <div class="wrap">
+            <span>FU Study Kit by <a href="https://github.com/CDinhh">CDinhh</a>. Not an official FuOverflow, FuExam or FPT University product.</span>
+            <nav aria-label="Footer">
+                <a href="privacy.html">Privacy policy</a>
+                <a href="https://github.com/CDinhh/Extension-FU-Study-Kit">Source code</a>
+                <a href="https://github.com/CDinhh/Extension-FU-Study-Kit/issues">Contact</a>
+            </nav>
+        </div>
+    </footer>
+</body>
+
+</html>
