@@ -60,15 +60,18 @@ Stores the user's study progress (reviewed threads, current question, flagged qu
 **Host permissions: \*://fuoverflow.com/\*, \*://\*.fuoverflow.com/\*, \*://fuexam.me/\*, \*://\*.fuexam.me/\***
 The content scripts add the checklist checkbox, progress badges and the question-jump panel to these two forums only. The extension does not run on any other site.
 
+**scripting**
+Used only for the optional FAP timetable: after the user presses "Bật thời khóa biểu", chrome.scripting.executeScript reads the weekly timetable table from a fap.fpt.edu.vn/WeeklyTimetable tab that the extension opens. No code is injected into any other site.
+
 **Optional host permission: <all_urls>**
-Requested only when the user presses "Cho phép chụp màn hình" in the popup. chrome.tabs.captureVisibleTab requires <all_urls> or activeTab; activeTab is not granted by clicks inside the page, so the screenshot buttons in the forum's image viewer need this permission. It is used only to capture the visible forum tab when the user presses a capture button. Nothing is read from or injected into other sites.
+Requested at runtime, narrowed to what the user asks for: https://fap.fpt.edu.vn/* when they press "Bật thời khóa biểu" (to read their weekly timetable), or <all_urls> when they press "Cho phép chụp màn hình" in the popup. chrome.tabs.captureVisibleTab requires <all_urls> or activeTab; activeTab is not granted by clicks inside the page, so the screenshot buttons in the forum's image viewer need this permission. It is used only to capture the visible forum tab when the user presses a capture button. Nothing is read from or injected into other sites.
 
 **Remote code**
 No. All code is packaged in the extension.
 
 ## Data usage (privacy practices form)
 
-- Collected data: none of the listed categories (no personally identifiable information, health, financial, authentication, personal communications, location, web history, user activity or website content is collected or transmitted).
+- Collected data: "Website content" only if the user turns on the FAP timetable: their weekly class timetable is read from fap.fpt.edu.vn and stored locally in chrome.storage.local to display in the popup. It is never transmitted. Nothing else is collected (no personally identifiable information, health, financial, authentication, personal communications, location, web history or user activity).
 - Certifications (tick all three):
   - I do not sell or transfer user data to third parties, outside of the approved use cases.
   - I do not use or transfer user data for purposes that are unrelated to my item's single purpose.

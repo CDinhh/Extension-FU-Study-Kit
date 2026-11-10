@@ -569,3 +569,180 @@ svg {
   outline: 2px solid rgba(96, 165, 250, 0.6);
   outline-offset: 2px;
 }
+
+/* --- FAP timetable --- */
+.pp-tt {
+  animation: pp-rise 700ms var(--ease) both;
+}
+
+.pp-tt__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pp-tt__meta {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pp-tt__refresh {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--hair);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--study);
+  cursor: pointer;
+  transition:
+    background-color 400ms var(--ease),
+    border-color 400ms var(--ease);
+}
+
+.pp-tt__refresh:hover {
+  border-color: rgba(96, 165, 250, 0.45);
+  background: rgba(96, 165, 250, 0.14);
+}
+
+.pp-tt__refresh:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.6);
+  outline-offset: 2px;
+}
+
+.pp-tt__refresh.is-busy svg {
+  animation: pp-spin 1.1s linear infinite;
+}
+
+.pp-tt__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  max-height: 250px;
+  margin-top: 8px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hair-strong) transparent;
+}
+
+.pp-tt__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pp-tt__note.is-warn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.1);
+  color: #fde68a;
+}
+
+.pp-tt__enable {
+  align-self: flex-start;
+  padding-right: 16px;
+}
+
+.pp-tt__day.is-past {
+  opacity: 0.45;
+}
+
+.pp-tt__dayname {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.pp-tt__day.is-today .pp-tt__dayname {
+  color: var(--study);
+}
+
+.pp-tt__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pp-tt__item {
+  padding: 6px 10px;
+  border-left: 2px solid var(--hair-strong);
+  border-radius: 0 8px 8px 0;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.pp-tt__day.is-today .pp-tt__item {
+  border-left-color: var(--study);
+  background: rgba(96, 165, 250, 0.07);
+}
+
+.pp-tt__main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pp-tt__time {
+  flex: none;
+  color: var(--flag);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.pp-tt__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-tt__tag {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--done);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+a.pp-tt__tag:hover {
+  background: rgba(52, 211, 153, 0.22);
+}
+
+.pp-tt__sub {
+  display: flex;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.pp-tt__att {
+  margin-left: auto;
+}
+
+.pp-tt__att.is-yes {
+  color: var(--done);
+}
+
+.pp-tt__att.is-no {
+  color: var(--danger);
+}
+
+@keyframes pp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

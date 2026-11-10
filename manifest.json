@@ -4,7 +4,8 @@
   "version": "2.0.0",
   "description": "Tick exam threads you have reviewed on FuOverflow and FuExam, resume questions, flag unsure ones. Not official.",
   "permissions": [
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "*://fuoverflow.com/*",
