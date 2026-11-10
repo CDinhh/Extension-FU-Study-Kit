@@ -136,6 +136,19 @@ body {
 
 .pp-site > .pp-site__name {
   width: 84px;
+  color: var(--text);
+  text-decoration: none;
+  transition: color 300ms var(--ease);
+}
+
+.pp-site > .pp-site__name:hover {
+  color: var(--accent);
+}
+
+.pp-site > .pp-site__name:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.6);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 .pp-site__host {
@@ -169,12 +182,6 @@ body {
 }
 
 /* --- Buttons with the nested icon island --- */
-.pp-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
 .pp-btn {
   display: inline-flex;
   align-items: center;
@@ -306,24 +313,52 @@ svg {
   font-size: 11px;
 }
 
-.pp-foot__ver {
-  margin-left: auto;
-}
-
 .pp-foot nav {
   display: flex;
+  align-items: center;
   gap: 14px;
 }
 
-.pp-foot a {
+.pp-foot__link,
+.pp-foot__gh {
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--text);
+  font: inherit;
   text-decoration: none;
   opacity: 0.7;
+  cursor: pointer;
   transition: opacity 300ms var(--ease);
 }
 
-.pp-foot a:hover {
+.pp-foot__link:hover,
+.pp-foot__gh:hover {
   opacity: 1;
+}
+
+.pp-foot__link:focus-visible,
+.pp-foot__gh:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.6);
+  outline-offset: 2px;
+  border-radius: 3px;
+  opacity: 1;
+}
+
+.pp-foot__gh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.pp-foot__gh img {
+  border: 1px solid var(--hair-strong);
+  border-radius: 50%;
+}
+
+.pp-foot__ver {
+  opacity: 0.6;
 }
 
 [hidden] {

@@ -61,7 +61,9 @@
         cell.append(el("dd", "", String(n)), el("dt", "", label));
         stats.append(cell);
       }
-      row.append(el("span", "pp-site__name", meta.name), stats, siteSwitch(id) || el("span", "pp-site__host", meta.host));
+      const name = el("a", "pp-site__name", meta.name);
+      Object.assign(name, { href: `https://${meta.host}/`, target: "_blank", rel: "noopener", title: `Mở ${meta.host}` });
+      row.append(name, stats, siteSwitch(id) || el("span", "pp-site__host", meta.host));
       wrap.append(row);
     });
   };
