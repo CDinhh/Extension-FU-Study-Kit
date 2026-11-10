@@ -101,14 +101,28 @@ https://cdinhh.github.io/Extension-FU-Study-Kit/privacy.html
 3. `03-popup.png`: popup with the FAP timetable and the attendance tooltip (light theme).
 4. `04-account.png`: account menu with Google Drive sync and the Google Calendar options (dark theme).
 
+## Small promo tile (440×280)
+
+`store/promo-small.png`.
+
 ## Packaging
 
-Run from the repository root in PowerShell:
+Commit first, then run from the repository root (PowerShell or Git Bash). `git archive` packs the
+committed files with forward-slash paths, which the Chrome Web Store expects (PowerShell 5.1's
+`Compress-Archive` writes backslashes).
 
-```powershell
-$files = "manifest.json","background.js","content.js","content.css","lightbox.js","lightbox.css","popup.html","popup.css","popup.js","lib","assets"
-Remove-Item exam-checklist.zip -ErrorAction SilentlyContinue
-Compress-Archive -Path $files -DestinationPath exam-checklist.zip
+```sh
+mkdir -p dist
+git archive --format=zip -o dist/fu-study-kit-2.1.0.zip HEAD manifest.json background.js drive.js calendar.js content.js content.css lightbox.js lightbox.css popup.html popup.css popup.js lib assets/fonts assets/icons/icon-16.png assets/icons/icon-32.png assets/icons/icon-48.png assets/icons/icon-128.png assets/icons/avatar.jpg
 ```
 
-This leaves out `docs`, `tests` and `store`. Unzip it into an empty folder and load it with "Load unpacked" to smoke-test before uploading.
+This leaves out `docs`, `tests`, `store`, the READMEs and the 512 px logo master. `dist/` is ignored
+by git. Unzip it into an empty folder and load it with "Load unpacked" to smoke-test before uploading.
+
+## After the first upload
+
+The Web Store gives the item its own extension id, different from the unpacked one. Google sign-in
+redirects to `https://<extension-id>.chromiumapp.org/`, so add that URI (with the store id) to the
+OAuth client's **Authorized redirect URIs** in Google Cloud, or sign-in fails with
+`redirect_uri_mismatch`. Data saved by an unpacked copy does not move to the store copy by itself:
+use Export / Import, or Google Drive sync.
