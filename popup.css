@@ -47,22 +47,20 @@
 }
 
 :root {
-  --bg: #05060a;
-  --core: rgba(8, 10, 18, 0.3);
-  --tile: rgba(255, 255, 255, 0.055);
-  --hair: rgba(255, 255, 255, 0.11);
-  --hair-strong: rgba(255, 255, 255, 0.2);
-  --text: #f2f4f8;
-  --muted: rgba(242, 244, 248, 0.62);
-  --done: #34d399;
-  --study: #7cb7ff;
-  --flag: #fbbf24;
-  --danger: #f87171;
+  --bg: #0b0c0f;
+  --card: #121419;
+  --cell: #191c22;
+  --hair: rgba(255, 255, 255, 0.07);
+  --hair-strong: rgba(255, 255, 255, 0.13);
+  --text: #e9ebef;
+  --muted: rgba(233, 235, 239, 0.52);
+  --accent: #6ea8fe;
+  --exam: #f5a524;
+  --done: #3ecf8e;
+  --danger: #f06a6a;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --r-shell: 18px;
-  --pad-shell: 5px;
-  --glass: linear-gradient(140deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04));
-  --blur: blur(22px) saturate(170%);
+  --r: 10px;
+  --r-sm: 6px;
   color-scheme: dark;
 }
 
@@ -83,66 +81,47 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Plain graphite backdrop: one quiet top light, no colour. The glass reads from its own edges. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, #161a22 0%, #0a0c11 45%, #06070a 100%);
-}
-
 .pp {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 16px 10px;
+  padding: 12px 14px 10px;
 }
 
-/* --- Header --- */
 .pp-head h1 {
-  margin: 0 2px;
-  font-size: 19px;
+  margin: 0 2px 2px;
+  font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   line-height: 1.2;
 }
 
-/* --- Glass card: a frosted plate (shell) holding a darker inner pane (core) --- */
+/* --- Card: one flat surface with a hairline edge and a faint top light --- */
 .pp-card {
-  padding: var(--pad-shell);
   border: 1px solid var(--hair);
-  border-radius: var(--r-shell);
-  background: var(--glass);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 24px 48px -28px rgba(0, 0, 0, 0.85);
-  animation: pp-rise 700ms var(--ease) both;
-  animation-delay: calc(var(--i, 0) * 80ms);
+  border-radius: var(--r);
+  background: var(--card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: pp-rise 500ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
 }
 
 .pp-card__core {
-  padding: 10px 14px;
-  border-radius: calc(var(--r-shell) - var(--pad-shell));
-  background: var(--core);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  padding: 10px 12px;
 }
 
 /* --- Revision progress: one row per forum --- */
 .pp-sites {
   display: flex;
   flex-direction: column;
-  padding-block: 4px;
+  padding-block: 2px;
 }
 
 .pp-site {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 0;
+  padding: 7px 0;
 }
 
 .pp-site + .pp-site {
@@ -150,13 +129,13 @@ body::before {
 }
 
 .pp-site__name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 .pp-site > .pp-site__name {
-  width: 86px;
+  width: 84px;
 }
 
 .pp-site__host {
@@ -167,7 +146,7 @@ body::before {
 .pp-stats {
   display: flex;
   flex: 1;
-  gap: 6px;
+  gap: 14px;
   margin: 0;
 }
 
@@ -175,10 +154,6 @@ body::before {
   display: flex;
   align-items: baseline;
   gap: 5px;
-  padding: 2px 9px;
-  border: 1px solid var(--hair);
-  border-radius: 999px;
-  background: var(--tile);
 }
 
 .pp-stats dd {
@@ -193,19 +168,7 @@ body::before {
   font-size: 11px;
 }
 
-.pp-stats .is-done dd {
-  color: var(--done);
-}
-
-.pp-stats .is-study dd {
-  color: var(--study);
-}
-
-.pp-stats .is-flag dd {
-  color: var(--flag);
-}
-
-/* --- Glass buttons with the nested icon island --- */
+/* --- Buttons with the nested icon island --- */
 .pp-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -216,27 +179,24 @@ body::before {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 40px;
-  padding: 4px 4px 4px 16px;
+  gap: 10px;
+  min-height: 36px;
+  padding: 3px 3px 3px 14px;
   border: 1px solid var(--hair-strong);
-  border-radius: 13px;
-  background: var(--glass);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: var(--card);
   color: var(--text);
-  font: 500 13px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  font: 500 12.5px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
   cursor: pointer;
   transition:
-    transform 500ms var(--ease),
-    background-color 500ms var(--ease),
-    border-color 500ms var(--ease);
+    transform 400ms var(--ease),
+    background-color 400ms var(--ease),
+    border-color 400ms var(--ease);
 }
 
 .pp-btn:hover {
-  border-color: rgba(255, 255, 255, 0.34);
-  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--cell);
 }
 
 .pp-btn:active {
@@ -244,47 +204,43 @@ body::before {
 }
 
 .pp-btn:focus-visible {
-  outline: 2px solid rgba(124, 183, 255, 0.7);
+  outline: 2px solid rgba(110, 168, 254, 0.6);
   outline-offset: 2px;
 }
 
 .pp-btn__icon {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.12);
-  transition: transform 500ms var(--ease);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  transition: transform 400ms var(--ease);
 }
 
 .pp-btn:hover .pp-btn__icon {
-  transform: translate(2px, -1px) scale(1.05);
+  transform: translate(1px, -1px);
 }
 
 .pp-btn--primary {
-  border-color: rgba(124, 183, 255, 0.45);
-  background: linear-gradient(140deg, rgba(124, 183, 255, 0.34), rgba(124, 183, 255, 0.1));
-  color: #e6f0ff;
+  border-color: rgba(110, 168, 254, 0.4);
+  color: #dce9ff;
 }
 
 .pp-btn--primary:hover {
-  border-color: rgba(124, 183, 255, 0.7);
-  background-color: rgba(124, 183, 255, 0.12);
+  border-color: rgba(110, 168, 254, 0.65);
+  background: rgba(110, 168, 254, 0.08);
 }
 
 .pp-btn--primary .pp-btn__icon {
-  background: rgba(124, 183, 255, 0.28);
-  color: #dbeafe;
+  background: rgba(110, 168, 254, 0.16);
+  color: var(--accent);
 }
 
 .pp-btn--ghost {
-  padding-right: 16px;
+  padding-right: 14px;
   border-color: transparent;
   background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
 }
 
 .pp-perm .pp-card__core {
@@ -298,8 +254,8 @@ body::before {
 }
 
 svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.4;
@@ -311,28 +267,26 @@ svg {
 .pp-msg,
 .pp-warn {
   margin: 0;
-  padding: 9px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--hair);
-  border-radius: 12px;
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
+  border-radius: 8px;
   font-size: 12px;
-  animation: pp-rise 500ms var(--ease) both;
+  animation: pp-rise 400ms var(--ease) both;
 }
 
 .pp-msg.is-ok {
-  background: rgba(124, 183, 255, 0.16);
-  color: #d5e6ff;
+  background: rgba(110, 168, 254, 0.08);
+  color: #cfe0ff;
 }
 
 .pp-msg.is-err {
-  background: rgba(248, 113, 113, 0.16);
+  background: rgba(240, 106, 106, 0.1);
   color: #fecaca;
 }
 
 .pp-warn {
-  background: rgba(251, 191, 36, 0.14);
-  color: #fde68a;
+  background: rgba(245, 165, 36, 0.08);
+  color: #fcd9a0;
 }
 
 .pp-perm__text {
@@ -347,7 +301,7 @@ svg {
 }
 
 .pp-foot {
-  padding: 2px 4px 0;
+  padding: 2px 2px 0;
   color: var(--muted);
   font-size: 11px;
 }
@@ -364,8 +318,8 @@ svg {
 .pp-foot a {
   color: var(--text);
   text-decoration: none;
-  opacity: 0.75;
-  transition: opacity 400ms var(--ease);
+  opacity: 0.7;
+  transition: opacity 300ms var(--ease);
 }
 
 .pp-foot a:hover {
@@ -383,11 +337,11 @@ svg {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(5, 6, 10, 0.5);
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
+  background: rgba(5, 6, 8, 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   opacity: 0;
-  transition: opacity 260ms var(--ease);
+  transition: opacity 240ms var(--ease);
 }
 
 .pp-modal.is-open {
@@ -397,18 +351,22 @@ svg {
 .pp-modal__card {
   width: 100%;
   max-width: 340px;
-  transform: scale(0.96) translateY(8px);
+  transform: scale(0.97) translateY(6px);
   animation: none;
-  transition: transform 420ms var(--ease);
+  transition: transform 380ms var(--ease);
 }
 
 .pp-modal.is-open .pp-modal__card {
   transform: none;
 }
 
+.pp-modal__card .pp-card__core {
+  padding: 14px;
+}
+
 .pp-modal h2 {
   margin: 0 0 4px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -422,7 +380,7 @@ svg {
 .pp-modal__list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -432,10 +390,9 @@ svg {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--hair);
-  border-radius: 10px;
-  background: var(--tile);
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: var(--cell);
 }
 
 .pp-modal__site {
@@ -453,24 +410,24 @@ svg {
 }
 
 .pp-modal__count.is-upd {
-  color: var(--study);
+  color: var(--accent);
 }
 
 .pp-modal__actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .pp-modal__actions .pp-btn {
-  padding: 5px 18px;
+  padding: 5px 16px;
 }
 
 @keyframes pp-rise {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.985);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -514,17 +471,16 @@ svg {
   appearance: none;
   position: relative;
   flex: none;
-  width: 32px;
-  height: 18px;
+  width: 30px;
+  height: 17px;
   margin: 0;
   border: 1px solid var(--hair-strong);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  border-radius: 5px;
+  background: var(--cell);
   cursor: pointer;
   transition:
-    background-color 400ms var(--ease),
-    border-color 400ms var(--ease);
+    background-color 300ms var(--ease),
+    border-color 300ms var(--ease);
 }
 
 .pp-switch input::after {
@@ -532,25 +488,25 @@ svg {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(242, 244, 248, 0.75);
-  transition: transform 450ms var(--ease);
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: rgba(233, 235, 239, 0.6);
+  transition: transform 350ms var(--ease);
 }
 
 .pp-switch input:checked {
-  border-color: rgba(124, 183, 255, 0.7);
-  background: rgba(124, 183, 255, 0.45);
+  border-color: rgba(110, 168, 254, 0.7);
+  background: rgba(110, 168, 254, 0.3);
 }
 
 .pp-switch input:checked::after {
   background: #fff;
-  transform: translateX(14px);
+  transform: translateX(13px);
 }
 
 .pp-switch input:focus-visible {
-  outline: 2px solid rgba(124, 183, 255, 0.7);
+  outline: 2px solid rgba(110, 168, 254, 0.6);
   outline-offset: 2px;
 }
 
@@ -565,7 +521,7 @@ svg {
   display: flex;
   flex: 1;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -581,32 +537,29 @@ svg {
 .pp-tt__status::before {
   content: "";
   flex: none;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--done);
-  box-shadow: 0 0 8px currentColor;
 }
 
 .pp-tt__status.is-warn::before {
-  background: var(--flag);
+  background: var(--exam);
 }
 
 .pp-tt__status.is-busy::before {
-  background: var(--study);
-  animation: pp-pulse 1s var(--ease) infinite alternate;
+  background: var(--accent);
+  animation: pp-pulse 900ms var(--ease) infinite alternate;
 }
 
-/* Week switcher: one glass capsule holding prev, the week on screen, next. */
+/* Week switcher: prev, the week on screen, next. */
 .pp-tt__nav {
   display: flex;
   flex: none;
   align-items: center;
   padding: 2px;
   border: 1px solid var(--hair-strong);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
 }
 
 .pp-tt__step,
@@ -617,9 +570,9 @@ svg {
   font: 500 11px/1 "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
   cursor: pointer;
   transition:
-    transform 500ms var(--ease),
-    background-color 400ms var(--ease),
-    opacity 400ms var(--ease);
+    transform 400ms var(--ease),
+    background-color 300ms var(--ease),
+    opacity 300ms var(--ease);
 }
 
 .pp-tt__step {
@@ -628,16 +581,16 @@ svg {
   width: 22px;
   height: 22px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: 5px;
 }
 
 .pp-tt__step:hover:not(:disabled),
 .pp-tt__week:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .pp-tt__step:active:not(:disabled) {
-  transform: scale(0.9);
+  transform: scale(0.92);
 }
 
 .pp-tt__step:disabled {
@@ -649,18 +602,18 @@ svg {
   min-width: 92px;
   height: 22px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: 5px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
 .pp-tt__week.is-current {
-  color: #e6f0ff;
+  color: var(--text);
 }
 
 .pp-tt__step:focus-visible,
 .pp-tt__week:focus-visible {
-  outline: 2px solid rgba(124, 183, 255, 0.7);
+  outline: 2px solid rgba(110, 168, 254, 0.6);
   outline-offset: 1px;
 }
 
@@ -672,30 +625,29 @@ svg {
   height: 28px;
   padding: 0;
   border: 1px solid var(--hair-strong);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  color: var(--study);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
   cursor: pointer;
   transition:
-    transform 500ms var(--ease),
-    background-color 400ms var(--ease),
-    border-color 400ms var(--ease);
+    color 300ms var(--ease),
+    background-color 300ms var(--ease),
+    border-color 300ms var(--ease);
 }
 
 .pp-tt__refresh:hover {
-  border-color: rgba(124, 183, 255, 0.6);
-  background: rgba(124, 183, 255, 0.2);
-  transform: rotate(40deg);
-}
-
-.pp-tt__refresh:active {
-  transform: rotate(40deg) scale(0.94);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
 }
 
 .pp-tt__refresh:focus-visible {
-  outline: 2px solid rgba(124, 183, 255, 0.7);
+  outline: 2px solid rgba(110, 168, 254, 0.6);
   outline-offset: 2px;
+}
+
+.pp-tt__refresh.is-busy {
+  color: var(--accent);
 }
 
 .pp-tt__refresh.is-busy svg {
@@ -717,20 +669,20 @@ svg {
 
 .pp-tt__enable {
   align-self: flex-start;
-  padding-right: 16px;
+  padding-right: 14px;
 }
 
 .pp-tt__table {
-  width: calc(100% + 8px);
-  margin: -4px;
-  border-spacing: 4px;
+  width: calc(100% + 6px);
+  margin: -3px;
+  border-spacing: 3px;
   table-layout: fixed;
   font-size: 11px;
   line-height: 1.35;
 }
 
 .pp-tt__table th {
-  padding: 4px 2px;
+  padding: 3px 2px 5px;
   color: var(--muted);
   font-weight: 500;
   text-align: center;
@@ -744,47 +696,29 @@ svg {
   display: block;
 }
 
-/* Each class is a small glass tile; empty slots stay as faint wells. */
+/* Today: an accent rule under the day name, and a faint tint down the column. */
+.pp-tt__table thead .is-today {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.pp-tt__table thead .is-today .pp-tt__dayname,
+.pp-tt__table thead .is-today .pp-tt__date {
+  color: var(--accent);
+}
+
 .pp-tt__table td {
   padding: 0;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.025);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.018);
   vertical-align: top;
 }
 
-.pp-tt__table td:not(:empty) {
-  border-color: var(--hair);
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  transition: transform 500ms var(--ease);
-}
-
-.pp-tt__table td:not(:empty):hover {
-  transform: translateY(-2px);
-}
-
-.pp-tt__table thead .is-today {
-  border-radius: 10px;
-  background: linear-gradient(150deg, rgba(124, 183, 255, 0.36), rgba(124, 183, 255, 0.12));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  color: #e6f0ff;
-}
-
 .pp-tt__table td.is-today {
-  background: rgba(124, 183, 255, 0.08);
-}
-
-.pp-tt__table td.is-today:not(:empty) {
-  border-color: rgba(124, 183, 255, 0.5);
-  background: linear-gradient(150deg, rgba(124, 183, 255, 0.3), rgba(124, 183, 255, 0.08));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 8px 22px -12px rgba(124, 183, 255, 0.9);
+  background: rgba(110, 168, 254, 0.05);
 }
 
 .pp-tt__table .is-past {
-  opacity: 0.45;
+  opacity: 0.42;
 }
 
 .pp-tt__dayname {
@@ -792,17 +726,16 @@ svg {
   font-weight: 600;
 }
 
-.pp-tt__table thead .is-today .pp-tt__dayname {
-  color: inherit;
-}
-
 .pp-tt__slot {
   color: var(--text);
   font-weight: 600;
 }
 
+.pp-tt__table th .pp-tt__time {
+  color: var(--muted);
+}
+
 .pp-tt__time {
-  color: var(--flag);
   font-variant-numeric: tabular-nums;
 }
 
@@ -810,8 +743,25 @@ svg {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 5px 5px 5px 6px;
+  min-height: 100%;
+  padding: 5px 6px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  background: var(--cell);
   color: var(--muted);
+  transition: border-color 300ms var(--ease);
+}
+
+.pp-tt__cell:hover {
+  border-color: var(--hair-strong);
+}
+
+.pp-tt__table td.is-today .pp-tt__cell {
+  border-color: rgba(110, 168, 254, 0.35);
+}
+
+.pp-tt__cell + .pp-tt__cell {
+  margin-top: 3px;
 }
 
 /* Long class and lecturer names are cut; the cell tooltip has them in full. */
@@ -822,15 +772,37 @@ svg {
   white-space: nowrap;
 }
 
-.pp-tt__cell + .pp-tt__cell {
-  border-top: 1px solid var(--hair);
-}
-
 .pp-tt__cell strong {
   color: var(--text);
   font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+}
+
+.pp-tt__cell .pp-tt__time {
+  color: var(--text);
+}
+
+/* Exams are the one thing that must stand out: amber edge, tint and label. */
+.pp-tt__cell.is-exam,
+.pp-tt__table td.is-today .pp-tt__cell.is-exam {
+  border-color: rgba(245, 165, 36, 0.55);
+  background: rgba(245, 165, 36, 0.1);
+  box-shadow: inset 2px 0 0 var(--exam);
+}
+
+.pp-tt__kind {
+  align-self: flex-start;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.is-exam .pp-tt__kind {
+  color: var(--exam);
 }
 
 /* Attendance dot: green attended, red absent. */
@@ -839,30 +811,28 @@ svg {
   content: "";
   position: absolute;
   top: 8px;
-  right: 7px;
-  width: 6px;
-  height: 6px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--done);
-  box-shadow: 0 0 8px var(--done);
 }
 
 .pp-tt__cell.is-no::after {
   background: var(--danger);
-  box-shadow: 0 0 8px var(--danger);
 }
 
 .pp-tt__tag {
   align-self: flex-start;
   margin-top: 3px;
-  padding: 0 6px;
-  border: 1px solid rgba(52, 211, 153, 0.35);
-  border-radius: 999px;
-  background: rgba(52, 211, 153, 0.16);
-  color: #a7f3d0;
+  padding: 0 5px;
+  border: 1px solid rgba(110, 168, 254, 0.4);
+  border-radius: 4px;
+  color: var(--accent);
   text-decoration: none;
+  transition: background-color 300ms var(--ease);
 }
 
 a.pp-tt__tag:hover {
-  background: rgba(52, 211, 153, 0.3);
+  background: rgba(110, 168, 254, 0.12);
 }

@@ -83,6 +83,7 @@ async function crawlTimetable(full) {
             teacher: text(block.querySelector(".ri-user-line")?.parentElement),
             online: !!block.querySelector(".ri-wifi-line"),
             meet: block.querySelector("a[href]")?.href || "",
+            kind: text(block.querySelector(".ri-bookmark-line")?.parentElement), // e.g. "Lịch thi"
             attendance: text(status),
             attended: status ? (status.classList.contains("text-success") ? "yes" : status.classList.contains("text-danger") ? "no" : "") : ""
           });

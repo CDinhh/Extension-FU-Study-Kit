@@ -129,8 +129,10 @@
 
   const ttCell = (item, rowTime) => {
     const [code, group] = item.title.split(" - ");
-    const cell = el("div", `pp-tt__cell${item.attended ? ` is-${item.attended}` : ""}`);
-    cell.title = [item.title, item.time, item.room, item.teacher, item.online && "Online", item.attendance].filter(Boolean).join("\n");
+    const exam = /thi|exam/i.test(item.kind || "");
+    const cell = el("div", ["pp-tt__cell", item.attended && `is-${item.attended}`, exam && "is-exam"].filter(Boolean).join(" "));
+    cell.title = [item.kind, item.title, item.time, item.room, item.teacher, item.online && "Online", item.attendance].filter(Boolean).join("\n");
+    if (item.kind) cell.append(el("span", "pp-tt__kind", exam ? "Lịch thi" : item.kind));
     cell.append(el("strong", "", code));
     if (group) cell.append(el("span", "", group));
     if (item.time && item.time !== rowTime) cell.append(el("span", "pp-tt__time", item.time));
