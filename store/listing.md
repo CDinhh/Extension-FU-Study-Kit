@@ -30,6 +30,7 @@ Bộ công cụ học tập cho sinh viên FPT: theo dõi việc ôn đề thi t
 • Chụp màn hình kèm khung chat: chụp từng câu hoặc cả đề (kèm phần bình luận đáp án) và tải về một file ZIP.
 • Thời khóa biểu FAP (tuỳ chọn): bật trong popup để xem lịch tuần dạng bảng, tự cập nhật từ fap.fpt.edu.vn bằng phiên đăng nhập sẵn có của bạn, rê chuột vào môn để xem đã vắng bao nhiêu, còn được vắng mấy buổi, luôn ghi rõ lần cập nhật gần nhất.
 • Chuyển máy: đồng bộ qua Google Drive của bạn (tuỳ chọn), hoặc Xuất/Nhập file JSON trong popup.
+• Google Calendar (tuỳ chọn): đưa buổi học và lịch thi vào một lịch riêng, tự sửa khi lịch FAP đổi, nhắc qua thông báo hoặc email.
 
 Quyền riêng tư: extension không gửi dữ liệu đi đâu, không analytics, không tải code từ xa. Tiến độ ôn và lịch học chỉ nằm trong trình duyệt của bạn.
 
@@ -45,6 +46,7 @@ A study toolkit for FPT University students: track exam revision on the FuOverfl
 • Screenshot with the discussion panel: capture one question or the whole exam (including the answer comments) as a ZIP.
 • FAP timetable (optional): turn it on in the popup to see your week as a table, refreshed from fap.fpt.edu.vn with your existing session, hover a class to see absences so far and how many you can still miss, with the last update time always shown.
 • Move between devices: sync through your own Google Drive (optional), or export/import a JSON file from the popup.
+• Google Calendar (optional): put your classes and exams into a separate calendar that follows FAP changes, with notification or email reminders.
 
 Privacy: no data sent anywhere, no analytics, no remote code. Your progress and timetable stay in your browser.
 
@@ -63,7 +65,7 @@ Stores the user's study progress (reviewed threads, current question, flagged qu
 The content scripts add the checklist checkbox, progress badges and the question-jump panel to these two forums only. The extension does not run on any other site.
 
 **identity**
-Used only for the optional Google Drive sync: when the user presses the cloud button, chrome.identity.launchWebAuthFlow opens Google's sign-in window. The extension asks for openid, email, profile (to show which account is signed in) and drive.appdata (one file in the app's hidden folder of the user's own Drive). No other Google data is accessed.
+Used only for the optional Google Drive and Google Calendar sync: when the user presses the cloud button or turns on Google Calendar, chrome.identity.launchWebAuthFlow opens Google's sign-in window. The extension asks for openid, email, profile (to show which account is signed in) drive.appdata (one file in the app's hidden folder of the user's own Drive) and, only when the user turns on Google Calendar, calendar.app.created (one calendar the extension creates, for the user's classes and exams). No other Google data is accessed.
 
 **scripting**
 Used only for the optional FAP timetable: after the user presses "Bật thời khóa biểu", chrome.scripting.executeScript reads the weekly timetable from fap.fpt.edu.vn/WeeklyTimetable and the per-course attendance counts from fap.fpt.edu.vn/Report/Attendance, in a tab that the extension opens. No code is injected into any other site.
@@ -79,7 +81,7 @@ No. All code is packaged in the extension.
 - Collected data:
   - "Website content" only if the user turns on the FAP timetable: their weekly class timetable and per-course attendance counts are read from fap.fpt.edu.vn and stored locally in chrome.storage.local to display in the popup.
   - "Personally identifiable information" (name, email address, profile picture) and "Authentication information" (a Google access token) only if the user signs in for Google Drive sync: shown in the popup to say which account is signed in; the token is kept in memory to call the Drive API.
-  - With Drive sync on, the study data, timetable and attendance are written to the user's own Google Drive (hidden app-data folder). Nothing is sent to the developer or any other party.
+  - With Drive sync on, the study data, timetable and attendance are written to the user's own Google Drive (hidden app-data folder). With Calendar sync on, the classes and exams are written as events to a calendar the extension creates in the user's own Google Calendar. Nothing is sent to the developer or any other party.
   - Nothing else is collected (no health, financial, personal communications, location, web history or user activity).
 - Certifications (tick all three):
   - I do not sell or transfer user data to third parties, outside of the approved use cases.

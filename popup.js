@@ -603,6 +603,7 @@
     $("calExams").checked = cfg.exams;
     $("calRemind").value = String(cfg.remind);
     $("calRemindExam").value = String(cfg.remindExam);
+    $("calVia").value = cfg.remindVia;
     $("calClear").hidden = !cfg.id;
     const status = $("calStatus");
     status.textContent = calendarBusy
@@ -630,6 +631,7 @@
   $("calExams").addEventListener("change", (e) => saveCalendar({ exams: e.target.checked }));
   $("calRemind").addEventListener("change", (e) => saveCalendar({ remind: Number(e.target.value) }));
   $("calRemindExam").addEventListener("change", (e) => saveCalendar({ remindExam: Number(e.target.value) }));
+  $("calVia").addEventListener("change", (e) => saveCalendar({ remindVia: e.target.value }));
   $("calClear").addEventListener("click", () => {
     const btn = $("calClear");
     // Deleting a whole calendar is not undoable, so it takes a second click.

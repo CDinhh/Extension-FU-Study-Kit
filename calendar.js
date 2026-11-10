@@ -19,7 +19,11 @@ async function eventId(key) {
   return `fsk${[...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
 
-const eventBody = (id, ev, remind) => ({
+// One reminder per chosen channel: a notification, an email from Google Calendar, or both.
+const reminderList = (remind, via) => (remind >= 0 ? (via === "both" ? ["popup", "email"] : [via]).map((method) => ({ method, minutes: remind })) : []);
+const reminderKey = (list) => (list || []).map((r) => `${r.method}:${r.minutes}`).sort().join(",");
+
+const eventBody = (id, ev, remind, via = "popup") => ({
   id,
   summary: ev.summary,
   location: ev.location,
@@ -27,7 +31,7 @@ const eventBody = (id, ev, remind) => ({
   start: { dateTime: ev.start, timeZone: CAL_TZ },
   end: { dateTime: ev.end, timeZone: CAL_TZ },
   ...(ev.exam ? { colorId: EXAM_COLOR } : {}),
-  reminders: { useDefault: false, overrides: remind >= 0 ? [{ method: "popup", minutes: remind }] : [] },
+  reminders: { useDefault: false, overrides: reminderList(remind, via) },
   status: "confirmed"
 });
 
@@ -39,7 +43,7 @@ const sameEvent = (cur, body) =>
   Date.parse(cur.start?.dateTime) === Date.parse(body.start.dateTime) &&
   Date.parse(cur.end?.dateTime) === Date.parse(body.end.dateTime) &&
   (cur.colorId || "") === (body.colorId || "") &&
-  (cur.reminders?.overrides?.[0]?.minutes ?? -1) === (body.reminders.overrides[0]?.minutes ?? -1);
+  reminderKey(cur.reminders?.overrides) === reminderKey(body.reminders.overrides);
 
 // Monday of last week: older classes are left as they are.
 function syncFrom() {
@@ -114,7 +118,8 @@ async function calendarSyncNow() {
     const tasks = [];
     for (const ev of wanted) {
       const id = await eventId(ev.key);
-      const body = eventBody(id, ev, ev.exam ? cfg.remindExam ?? C.CALENDAR_DEFAULTS.remindExam : cfg.remind ?? C.CALENDAR_DEFAULTS.remind);
+      const minutesBefore = ev.exam ? cfg.remindExam ?? C.CALENDAR_DEFAULTS.remindExam : cfg.remind ?? C.CALENDAR_DEFAULTS.remind;
+      const body = eventBody(id, ev, minutesBefore, cfg.remindVia || C.CALENDAR_DEFAULTS.remindVia);
       const cur = existing.get(id);
       existing.delete(id);
       if (cur && sameEvent(cur, body)) continue;

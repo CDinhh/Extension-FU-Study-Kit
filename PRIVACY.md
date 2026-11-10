@@ -1,6 +1,6 @@
 # Chính sách quyền riêng tư / Privacy Policy
 
-**FU Study Kit: Exam Checklist & FAP Timetable** · cập nhật / last updated: 2026-11-11
+**FU Study Kit: Exam Checklist & FAP Timetable** · cập nhật / last updated: 2026-11-12
 
 Đây không phải extension chính thức của FuOverflow / FuExam.
 This is not an official FuOverflow / FuExam extension.
@@ -51,6 +51,13 @@ trình duyệt và bị thu hồi khi bạn bấm Đăng xuất. Dữ liệu đi
 không qua máy chủ nào khác. Muốn xoá file trên Drive: vào Google Drive → Cài đặt → Quản lý ứng dụng →
 FU Study Kit → Xoá dữ liệu ứng dụng ẩn.
 
+**Google Calendar (tuỳ chọn, tắt mặc định):** khi bạn bật công tắc Google Calendar trong menu tài khoản,
+extension tạo một lịch riêng tên "FU Study Kit – Lịch học" trong Google Calendar của bạn và thêm vào đó
+các buổi học / lịch thi lấy từ thời khóa biểu FAP (môn, lớp, giờ, phòng, giảng viên, link học online), cùng
+lời nhắc theo cài đặt của bạn. Quyền `calendar.app.created` chỉ cho extension làm việc với lịch do chính
+nó tạo; extension không đọc hay sửa lịch nào khác của bạn. Nút "Xoá lịch đã thêm" xoá cả lịch riêng đó.
+Cài đặt Calendar (có mã của lịch riêng) được lưu cùng file trên Google Drive để các máy của bạn dùng chung.
+
 **Xuất/Nhập dữ liệu:** file JSON bạn xuất ra được lưu vào máy của bạn và chỉ được đọc khi bạn chủ
 động chọn nó để nhập. Extension không gửi file đó đi đâu.
 
@@ -62,7 +69,7 @@ duyệt và tải thẳng vào máy bạn.
 | Quyền | Lý do |
 |---|---|
 | `storage` | Lưu tiến độ ôn đề và thời khóa biểu trên máy (`chrome.storage.local`). |
-| `identity` | Mở cửa sổ đăng nhập Google khi bạn bấm nút đám mây, để đồng bộ với Google Drive của bạn. |
+| `identity` | Mở cửa sổ đăng nhập Google khi bạn bấm nút đám mây hoặc bật Google Calendar, để đồng bộ với Google Drive / Google Calendar của bạn. |
 | Truy cập `fuoverflow.com`, `fuexam.me` | Hiện checkbox, nhãn tiến độ và panel nhảy câu trên hai diễn đàn này. Extension không chạy trên trang nào khác. |
 | `scripting` + truy cập `fap.fpt.edu.vn` (tuỳ chọn, chỉ xin khi bạn bấm "Bật thời khóa biểu") | Đọc bảng lịch tuần và báo cáo điểm danh từ tab FAP để hiện trong popup. |
 | `<all_urls>` (tuỳ chọn, chỉ xin khi bạn bấm "Cho phép chụp màn hình") | Trình duyệt chỉ cho phép `chrome.tabs.captureVisibleTab` khi có quyền này. Chỉ dùng để chụp tab diễn đàn đang mở khi bạn bấm nút chụp. |
@@ -125,6 +132,14 @@ kept in browser memory only and is revoked when you press Sign out. Data goes st
 browser to Google, through no other server. To delete the Drive file: Google Drive → Settings →
 Manage apps → FU Study Kit → Delete hidden app data.
 
+**Google Calendar (optional, off by default):** when you turn on the Google Calendar switch in the account
+menu, the extension creates a separate calendar named "FU Study Kit – Lịch học" in your Google Calendar and
+adds your classes / exams from the FAP timetable to it (course, class, time, room, lecturer, online-class
+link), with reminders as you set them. The scope `calendar.app.created` only reaches calendars the
+extension itself created; it cannot read or change any other calendar of yours. "Xoá lịch đã thêm" (remove
+everything added) deletes that calendar. The Calendar settings (including that calendar's id) are kept in
+the Drive file so your computers share them.
+
 **Export/Import:** the JSON file you export is saved on your device and is read only when you
 choose it for import. The extension never uploads it.
 
@@ -136,7 +151,7 @@ downloaded straight to your device.
 | Permission | Why |
 |---|---|
 | `storage` | Save study progress and the timetable on your device (`chrome.storage.local`). |
-| `identity` | Open Google's sign-in window when you press the cloud button, to sync with your Google Drive. |
+| `identity` | Open Google's sign-in window when you press the cloud button or turn on Google Calendar, to sync with your Google Drive / Google Calendar. |
 | Access to `fuoverflow.com`, `fuexam.me` | Show checkboxes, progress badges and the question-jump panel on these two forums. The extension runs on no other site. |
 | `scripting` + access to `fap.fpt.edu.vn` (optional, requested only when you press "Bật thời khóa biểu") | Read the weekly timetable and the attendance report from a FAP tab to show them in the popup. |
 | `<all_urls>` (optional, requested only when you press "Cho phép chụp màn hình") | Chrome allows `chrome.tabs.captureVisibleTab` only with this permission. It is used only to capture the open forum tab when you press a capture button. |

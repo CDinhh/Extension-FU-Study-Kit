@@ -273,10 +273,18 @@ test("calendarEvents builds one keyed event per class from the given week on", (
 
 test("calendar settings travel through the cloud copy, newer wins", () => {
   const c = C.cleanCloud({ app: "fu-exam-checklist", calendar: { id: "abc@group.calendar.google.com", on: true, remind: 99999, at: 5 } });
-  assert.deepEqual(c.calendar, { id: "abc@group.calendar.google.com", on: true, classes: true, exams: true, remind: 30, remindExam: 1440, at: 5 });
+  assert.deepEqual(c.calendar, { id: "abc@group.calendar.google.com", on: true, classes: true, exams: true, remind: 30, remindExam: 1440, remindVia: "popup", at: 5 });
   assert.equal(C.cleanCloud({ app: "fu-exam-checklist", calendar: { exams: false, remindExam: -1, at: 5 } }).calendar.exams, false);
   assert.equal(C.cleanCloud({ app: "fu-exam-checklist", calendar: { id: "x y", on: true, at: 5 } }).calendar.id, null);
   const empty = { sites: {}, threads: {}, fapTimetable: null, fapAttendance: null };
   const m = C.mergeCloud({ ...empty, calendar: { id: null, on: false, remind: 30, at: 9 } }, { ...empty, calendar: c.calendar });
   assert.equal(m.calendar.on, false); // the local "turned off" is newer
+});
+
+test("calendar reminder channel defaults to a notification and rejects unknown values", () => {
+  const clean = (remindVia) => C.cleanCloud({ app: "fu-exam-checklist", calendar: { remindVia, at: 5 } }).calendar.remindVia;
+  assert.equal(clean("both"), "both");
+  assert.equal(clean("email"), "email");
+  assert.equal(clean("sms"), "popup");
+  assert.equal(clean(undefined), "popup");
 });
