@@ -6,7 +6,7 @@
 
 **Revise smarter, and never miss a class or an exam.**
 
-[**Download v2.1.0**](https://github.com/CDinhh/Extension-FU-Study-Kit/releases/latest) ·
+[**Get it on the Chrome Web Store**](https://chromewebstore.google.com/detail/galbpjelfcjibchlldbobcghedbccoke) ·
 [Home page](https://cdinhh.github.io/Extension-FU-Study-Kit/) ·
 [Privacy](https://cdinhh.github.io/Extension-FU-Study-Kit/privacy.html) ·
 [Report a bug](https://github.com/CDinhh/Extension-FU-Study-Kit/issues) ·
@@ -37,7 +37,9 @@ The extension's interface is in Vietnamese.
 
 ## Install
 
-Download the ZIP from the [latest release](https://github.com/CDinhh/Extension-FU-Study-Kit/releases/latest) and unzip it. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and choose the unzipped folder. Works in Chrome, Edge, Brave and other Chromium browsers.
+Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/galbpjelfcjibchlldbobcghedbccoke) and click **Add to Chrome**. Works in Chrome, Edge, Brave and other Chromium browsers.
+
+To install manually: download the ZIP from the [latest release](https://github.com/CDinhh/Extension-FU-Study-Kit/releases/latest) and unzip it, open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and choose the unzipped folder.
 
 ## Privacy
 

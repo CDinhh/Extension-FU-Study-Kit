@@ -124,6 +124,6 @@ by git. Unzip it into an empty folder and load it with "Load unpacked" to smoke-
 
 The Web Store gives the item its own extension id, different from the unpacked one. Google sign-in
 redirects to `https://<extension-id>.chromiumapp.org/`, so add that URI (with the store id) to the
-OAuth client's **Authorized redirect URIs** in Google Cloud, or sign-in fails with
+OAuth client's **Authorized redirect URIs** in Google Cloud (store id `galbpjelfcjibchlldbobcghedbccoke`, so `https://galbpjelfcjibchlldbobcghedbccoke.chromiumapp.org/`), or sign-in fails with
 `redirect_uri_mismatch`. Data saved by an unpacked copy does not move to the store copy by itself:
 use Export / Import, or Google Drive sync.

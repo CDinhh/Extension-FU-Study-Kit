@@ -6,7 +6,7 @@
 
 **Ôn đề có kế hoạch, không lỡ buổi học hay lịch thi nào.**
 
-[**Tải v2.1.0**](https://github.com/CDinhh/Extension-FU-Study-Kit/releases/latest) ·
+[**Cài từ Chrome Web Store**](https://chromewebstore.google.com/detail/galbpjelfcjibchlldbobcghedbccoke) ·
 [Trang chủ](https://cdinhh.github.io/Extension-FU-Study-Kit/vi/) ·
 [Quyền riêng tư](https://cdinhh.github.io/Extension-FU-Study-Kit/vi/privacy.html) ·
 [Báo lỗi](https://github.com/CDinhh/Extension-FU-Study-Kit/issues) ·
@@ -35,7 +35,9 @@ https://github.com/user-attachments/assets/7f9111ff-f5e7-4f6f-a9c2-8114c7d1459f
 
 ## Cài đặt
 
-Tải file ZIP ở [bản phát hành mới nhất](https://github.com/CDinhh/Extension-FU-Study-Kit/releases/latest) rồi giải nén. Mở `chrome://extensions`, bật **Developer mode**, bấm **Load unpacked** và chọn thư mục vừa giải nén. Chạy trên Chrome, Edge, Brave và các trình duyệt Chromium khác.
+Cài từ [Chrome Web Store](https://chromewebstore.google.com/detail/galbpjelfcjibchlldbobcghedbccoke), bấm **Thêm vào Chrome** là xong. Chạy trên Chrome, Edge, Brave và các trình duyệt Chromium khác.
+
+Muốn cài thủ công: tải file ZIP ở [bản phát hành mới nhất](https://github.com/CDinhh/Extension-FU-Study-Kit/releases/latest) rồi giải nén, mở `chrome://extensions`, bật **Developer mode**, bấm **Load unpacked** và chọn thư mục vừa giải nén.
 
 ## Quyền riêng tư
 
