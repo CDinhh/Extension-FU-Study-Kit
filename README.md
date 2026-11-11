@@ -14,6 +14,8 @@
 
 </div>
 
+https://github.com/user-attachments/assets/7f9111ff-f5e7-4f6f-a9c2-8114c7d1459f
+
 | Thời khóa biểu và điểm danh FAP | Tài khoản Google: Drive và Calendar |
 |---|---|
 | ![Popup với thời khóa biểu và tooltip điểm danh](store/screenshots/03-popup.png) | ![Menu tài khoản với đồng bộ Drive và Calendar](store/screenshots/04-account.png) |

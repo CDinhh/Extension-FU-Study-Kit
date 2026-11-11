@@ -14,6 +14,8 @@
 
 </div>
 
+https://github.com/user-attachments/assets/7f9111ff-f5e7-4f6f-a9c2-8114c7d1459f
+
 | FAP timetable and attendance | Google account: Drive and Calendar |
 |---|---|
 | ![Popup with the timetable and an attendance tooltip](store/screenshots/03-popup.png) | ![Account menu with Drive and Calendar sync](store/screenshots/04-account.png) |
