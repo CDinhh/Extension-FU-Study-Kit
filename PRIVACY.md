@@ -1,6 +1,6 @@
 # Chính sách quyền riêng tư / Privacy Policy
 
-**FU Study Kit: Exam Checklist & FAP Timetable**
+**FU Study Kit: Exam Checklist & FAP Timetable** ([Chrome Web Store](https://chromewebstore.google.com/detail/galbpjelfcjibchlldbobcghedbccoke))
 
 - **Tiếng Việt:** https://cdinhh.github.io/Extension-FU-Study-Kit/vi/privacy.html
 - **English:** https://cdinhh.github.io/Extension-FU-Study-Kit/privacy.html
