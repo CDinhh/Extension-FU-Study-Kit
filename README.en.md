@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/7f9111ff-f5e7-4f6f-a9c2-8114c7d1459f
 
 | FAP timetable and attendance | Google account: Drive and Calendar |
 |---|---|
-| ![Popup with the timetable and an attendance tooltip](store/screenshots/03-popup.png) | ![Account menu with Drive and Calendar sync](store/screenshots/04-account.png) |
+| ![Popup with the timetable, attendance and grade components](store/screenshots/03-popup.png) | ![Account menu with Drive and Calendar sync](store/screenshots/04-account.png) |
 | **Revision checklist on FuOverflow / FuExam** | **Jump, flag, capture with discussion** |
 | ![Thread list with checkboxes and the progress bar](store/screenshots/01-list.png) | ![Image viewer with the question grid](store/screenshots/02-lightbox.png) |
 
