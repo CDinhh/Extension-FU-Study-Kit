@@ -176,7 +176,7 @@ async function readAttendance() {
 }
 
 // Runs inside the FAP page: a cover that says what the sync is doing, so the weeks flipping
-// underneath make sense and are not clicked mid-read. state = {stage: "tt"|"att"|"done", text,
+// underneath make sense and are not clicked mid-read. state = {stage: "tt"|"att"|"flm"|"done", text, metas,
 // progress 0..1 or null}; null takes it off. base is the extension URL, for the logo and font.
 function fapOverlay(state, base) {
   const ID = "fsk-sync-overlay";
@@ -242,6 +242,7 @@ function fapOverlay(state, base) {
       <ol>
         <li data-s="tt"><span class="ico"></span><span class="name">Thời khóa biểu</span><span class="meta"></span></li>
         <li data-s="att"><span class="ico"></span><span class="name">Điểm danh</span><span class="meta"></span></li>
+        <li data-s="flm"><span class="ico"></span><span class="name">Thành phần điểm</span><span class="meta"></span></li>
       </ol>
       <footer>Tab sẽ tự đóng khi xong.</footer>
       <div class="bar"><div class="fill"></div></div>
@@ -260,8 +261,9 @@ function fapOverlay(state, base) {
     row.classList.toggle("ok", i < now);
     row.classList.toggle("on", i === now);
   });
-  // The row being read (the last one once done) shows the count.
-  if (state.text != null) rows[Math.min(now, rows.length - 1)].querySelector(".meta").textContent = state.text;
+  // metas fills rows by stage (after a page change the earlier counts are gone); text is the row being read.
+  for (const row of rows) if (state.metas?.[row.dataset.s] != null) row.querySelector(".meta").textContent = state.metas[row.dataset.s];
+  if (state.text != null && rows[now]) rows[now].querySelector(".meta").textContent = state.text;
   const progress = done ? 1 : state.progress;
   root.querySelector(".bar").classList.toggle("wait", progress == null);
   root.querySelector(".fill").style.width = progress == null ? "" : `${Math.round(progress * 100)}%`;
@@ -275,8 +277,9 @@ const parseCourse = (label) => {
   return m ? { name: m[1], code: m[2], group: m[3] } : { name: label, code: label, group: "" };
 };
 
-// Timetable stored: read attendance in the same tab, keep it, show "done" and close the tab.
-async function finishFapSync({ tabId, back }) {
+// Timetable stored: read attendance in the same tab, then grade components on FLM when needed.
+async function finishFapSync(fapSync) {
+  const { tabId } = fapSync;
   await showOverlay(tabId, { stage: "att", text: "đang mở…", progress: null });
   let page = null;
   try {
@@ -291,8 +294,107 @@ async function finishFapSync({ tabId, back }) {
     ? page.courses.slice(0, 40).map((c) => ({ id: str(c?.id), ...parseCourse(str(c?.label)), present: num(c?.present), absent: num(c?.absent), pending: num(c?.pending), total: num(c?.total) }))
     : null;
   if (courses) await chrome.storage.local.set({ fapAttendance: { fetchedAt: Date.now(), term: str(page.term), courses } });
+  const metas = { tt: `${fapSync.count || 0} tuần`, att: courses ? `${courses.length} môn` : "giữ bản cũ" };
+  const codes = await syllabusToFetch();
+  if (codes === null) return endFapSync(fapSync, { ...metas, flm: "bỏ qua" });
+  if (!codes.length) return endFapSync(fapSync, { ...metas, flm: "đã có" });
+  // Grade components live on FLM: one page change, then everything is fetched inside that page.
+  await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "flm", codes, metas } });
+  chrome.tabs.update(tabId, { url: FLM_SEARCH }).catch(() => {});
+}
+
+// --- Grade components (FLM syllabus) ---
+// FLM sits behind Cloudflare like FAP, so it is read from an FLM tab with the user's session.
+// A syllabus barely changes, so each course is fetched once and kept for a month.
+const FLM_ORIGIN = "https://flm.fpt.edu.vn";
+const FLM_SEARCH = `${FLM_ORIGIN}/gui/role/student/SyllabusManagement`;
+const SYLLABUS_TTL = 30 * 24 * 60 * 60 * 1000;
+
+// Course codes whose components are missing or old; null when FLM reading is not allowed.
+async function syllabusToFetch() {
+  if (!(await chrome.permissions.contains({ origins: [`${FLM_ORIGIN}/*`] }))) return null;
+  const { fapAttendance, fapSyllabus = {} } = await chrome.storage.local.get(["fapAttendance", "fapSyllabus"]);
+  const codes = [...new Set((fapAttendance?.courses || []).map((c) => c.code).filter(Boolean))];
+  return codes.filter((code) => !(Date.now() - (fapSyllabus[code]?.fetchedAt || 0) < SYLLABUS_TTL));
+}
+
+// Runs inside an FLM page: for each course, find its syllabus and read the assessment table.
+async function readSyllabi(codes) {
+  const text = (node) => (node ? node.textContent.replace(/\s+/g, " ").trim() : "");
+  const show = globalThis.__fskOverlay || (() => {});
+  const load = async (path) => {
+    const res = await fetch(path, { credentials: "same-origin" });
+    // Signed out, FLM sends every page to /Login.
+    return res.ok && !res.redirected ? new DOMParser().parseFromString(await res.text(), "text/html") : null;
+  };
+  const out = {};
+  for (const [i, code] of codes.entries()) {
+    show({ stage: "flm", text: `${i + 1}/${codes.length} môn`, progress: i / codes.length });
+    const list = await load(`/gui/role/student/SyllabusManagement?searchOn=Code&keyword=${encodeURIComponent(code)}`).catch(() => null);
+    if (!list) break;
+    // The search matches by prefix (PRN finds PRN211, PRN212…): keep the exact code, active and
+    // approved first, newest (highest id) first.
+    const best = [...list.querySelectorAll("tr")]
+      .filter((tr) => tr.cells.length > 5 && text(tr.cells[1]).toUpperCase() === code.toUpperCase())
+      .map((tr) => ({
+        id: Number((/sylID=(\d+)/.exec(tr.querySelector("a[href*='SyllabusDetails']")?.getAttribute("href")) || [])[1]) || 0,
+        ok: [...tr.querySelectorAll("input[type=checkbox]")].every((box) => box.checked)
+      }))
+      .filter((s) => s.id)
+      .sort((a, b) => b.ok - a.ok || b.id - a.id)[0];
+    if (!best) {
+      out[code] = { id: 0, items: [] }; // no syllabus on FLM: remembered so it is not asked every time
+      continue;
+    }
+    const doc = await load(`/gui/role/student/SyllabusDetails?sylID=${best.id}`).catch(() => null);
+    if (!doc) continue;
+    const items = [...doc.querySelectorAll("#gvAssessment tr")].slice(1).map((tr) => [...tr.cells].map(text));
+    out[code] = { id: best.id, items: items.map(([, category, type, part, weight, criteria]) => ({ category, type, part, weight, criteria })) };
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+// The sync tab has landed on FLM: read the components, keep them, finish.
+async function readFlm(tab, fapSync) {
+  await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "flm-reading" } }); // one read per sync
+  let found = null;
+  // Anywhere else (the FLM sign-in) the step is skipped: grade components are a bonus, not worth a login wall.
+  if (tab.url?.startsWith(FLM_SEARCH)) {
+    await showOverlay(tab.id, { stage: "flm", text: "đang mở…", metas: fapSync.metas, progress: null });
+    try {
+      [{ result: found }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readSyllabi, args: [fapSync.codes] });
+    } catch {
+      // Page navigated away mid-read: keep what is stored.
+    }
+  }
+  if (found && typeof found === "object") {
+    const { fapSyllabus = {} } = await chrome.storage.local.get("fapSyllabus");
+    // Page data, so only keep checked fields.
+    const str = (v, n = 80) => String(v ?? "").slice(0, n);
+    for (const code of fapSync.codes) {
+      const s = found[code];
+      if (!s) continue;
+      fapSyllabus[code] = {
+        fetchedAt: Date.now(),
+        id: Number.isInteger(s.id) ? s.id : 0,
+        items: (Array.isArray(s.items) ? s.items : []).slice(0, 30).map((it) => ({
+          category: str(it?.category),
+          type: str(it?.type, 40),
+          part: str(it?.part, 10),
+          weight: str(it?.weight, 12),
+          criteria: str(it?.criteria, 20)
+        }))
+      };
+    }
+    await chrome.storage.local.set({ fapSyllabus });
+  }
+  await endFapSync(fapSync, { ...fapSync.metas, flm: found ? `${Object.keys(found).length} môn` : "chưa đăng nhập FLM" });
+}
+
+// Everything read: show "done", close the sync tab and hand the screen back.
+async function endFapSync({ tabId, back }, metas) {
   await chrome.storage.session.remove("fapSync");
-  await showOverlay(tabId, { stage: "done", text: courses ? `${courses.length} môn` : "giữ bản cũ" });
+  await showOverlay(tabId, { stage: "done", metas });
   setTimeout(async () => {
     // Only hand the screen back if the user is still watching the sync tab.
     const watching = await chrome.tabs.get(tabId).then((t) => t.active, () => false);
@@ -328,7 +430,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   const { fapSync } = await chrome.storage.session.get("fapSync");
   if (fapSync?.tabId !== tabId) return;
 
-  if (fapSync.stage === "attendance") return; // read by fetch inside the page, no load to react to
+  if (fapSync.stage === "flm") return readFlm(tab, fapSync);
+  if (fapSync.stage) return; // attendance and FLM are read by fetch inside the page, no load to react to
   const target = FAP_TIMETABLE;
   let started = null;
   try {
@@ -383,7 +486,7 @@ async function onFapCrawl(message, sender) {
   }
   for (const key of Array.isArray(message.drop) ? message.drop : []) delete weeks[key];
   await chrome.storage.local.set({ fapTimetable: { fetchedAt: Date.now(), weeks } });
-  if (fapSync.stage === "attendance") return; // a late fapDone; the timetable is already stored
+  if (fapSync.stage) return; // a late fapDone; the timetable is already stored
   // Timetable done; the same tab reads attendance next (not awaited: the page waits on this answer).
   await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "attendance", state: "loading" } });
   finishFapSync(fapSync);

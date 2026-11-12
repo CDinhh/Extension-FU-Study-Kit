@@ -45,7 +45,7 @@
     },
     {
       "resources": ["assets/icons/icon-128.png", "assets/fonts/*"],
-      "matches": ["https://fap.fpt.edu.vn/*"]
+      "matches": ["https://fap.fpt.edu.vn/*", "https://flm.fpt.edu.vn/*"]
     }
   ],
   "content_scripts": [

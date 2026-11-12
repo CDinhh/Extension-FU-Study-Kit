@@ -168,7 +168,17 @@
   const TT_STALE_MS = 60 * 60 * 1000;
   let ttEnabled = false;
 
-  const ttSync = (focus, full) => chrome.runtime.sendMessage({ action: "fapSync", focus, full }).catch(() => {});
+  // FLM holds each course's grade components. Asked for once, on a click, so people who turned the
+  // timetable on before this existed get the question too; a "no" is not asked again.
+  const FLM = { origins: ["https://flm.fpt.edu.vn/*"] };
+  const ttSync = async (focus, full) => {
+    if (!prefs.flmAsked) {
+      prefs = { ...prefs, flmAsked: true };
+      await chrome.storage.local.set({ prefs }); // saved first: the prompt can close the popup
+      await chrome.permissions.request(FLM).catch(() => false);
+    }
+    chrome.runtime.sendMessage({ action: "fapSync", focus, full }).catch(() => {});
+  };
 
   // Weeks are stored under their Monday as yyyy-mm-dd, the same key background.js writes.
   const ttKey = (date) => {
@@ -209,6 +219,7 @@
     const at = data?.fetchedAt;
     if (sync?.state === "attention") return ["warn", "Chờ đăng nhập FAP", "Đăng nhập ở tab FAP vừa mở, lịch sẽ tự cập nhật"];
     if (sync?.stage === "attendance") return ["busy", "Đang đọc điểm danh…", ""];
+    if (sync?.stage?.startsWith("flm")) return ["busy", "Đang đọc thành phần điểm…", ""];
     if (sync) return ["busy", `Đang đồng bộ… ${sync.count || 0} tuần`, ""];
     if (!at) return ["warn", "Chưa có lịch", ""];
     const stale = Date.now() - at > TT_STALE_MS;
@@ -292,6 +303,18 @@
     return { tone: left < 0 ? "is-over" : left === 0 && allowed ? "is-edge" : "" };
   };
 
+  // --- Grade components, read from the FLM syllabus by background.js, keyed by course code. ---
+  let gradeParts = {};
+
+  // "Final Project Presentation:" | 1 | "40.0%" | "5" -> ["Final Project Presentation", "40% · cần ≥ 5"].
+  // A criterion of ">0" (just take it) is on nearly every row, so only real minimums are shown.
+  const gradeRow = (it) => {
+    const name = it.category.replace(/[\s:]+$/, "") + (Number(it.part) > 1 ? ` (${it.part} lần)` : "");
+    const weight = Number.isFinite(parseFloat(it.weight)) ? `${parseFloat(it.weight)}%` : it.weight;
+    const min = /^\d+(\.\d+)?$/.test(it.criteria) ? (Number(it.criteria) > 0 ? `cần ≥ ${it.criteria}` : "") : /^>\s*0$/.test(it.criteria) ? "" : it.criteria;
+    return [name, min ? `${weight} · ${min}` : weight];
+  };
+
   // One floating tooltip for every timetable cell, kept inside the popup.
   const tip = el("div", "pp-tip");
   tip.setAttribute("role", "tooltip");
@@ -342,6 +365,12 @@
       );
       tip.append(box);
     }
+    const parts = gradeParts[code]?.items;
+    if (parts?.length) {
+      const box = el("div", "pp-tip__att");
+      box.append(el("span", "pp-tip__label", "Thành phần điểm"), kvList(parts.map(gradeRow)));
+      tip.append(box);
+    }
     placeTip(cell);
   }
 
@@ -389,7 +418,7 @@
   const renderTimetable = async () => {
     const [granted, local, session] = await Promise.all([
       chrome.permissions.contains(FAP),
-      chrome.storage.local.get(["fapTimetable", "fapAttendance", "prefs"]),
+      chrome.storage.local.get(["fapTimetable", "fapAttendance", "fapSyllabus", "prefs"]),
       chrome.storage.session.get("fapSync")
     ]);
     const enabled = granted && !!local.prefs?.timetable;
@@ -413,6 +442,7 @@
     $("ttWeek").textContent = ttWeekLabel(ttView);
     $("ttWeek").classList.toggle("is-current", ttView === thisWeek);
     renderAttendance(local.fapAttendance);
+    gradeParts = local.fapSyllabus || {};
     // The cells were rebuilt: drop a tooltip pinned to an old cell, keep one on a header button.
     if (tipFor && !tipFor.isConnected) hideTip();
 
@@ -445,11 +475,12 @@
 
   async function enableTimetable() {
     // Save the opt-in first: the permission prompt can close the popup before it resolves.
-    prefs = { ...prefs, timetable: true };
+    prefs = { ...prefs, timetable: true, flmAsked: true };
     await chrome.storage.local.set({ prefs });
     try {
-      // The user just asked for it, so the first read starts right away (if the popup survives the prompt).
-      if (await chrome.permissions.request(FAP)) ttSync(true, true);
+      // One prompt for both sites. The user just asked for it, so the first read starts right away
+      // (if the popup survives the prompt).
+      if (await chrome.permissions.request({ origins: [...FAP.origins, ...FLM.origins] })) ttSync(true, true);
     } catch (err) {
       say(`Không xin được quyền: ${err.message}`, "err");
     }
@@ -467,7 +498,7 @@
   $("ttWeek").addEventListener("click", () => ttStep(0));
   setInterval(() => renderTimetable(), 60000); // keeps "N phút trước" honest while the popup stays open
   chrome.storage.onChanged.addListener((changes) => {
-    if (changes.fapTimetable || changes.fapAttendance || changes.fapSync) renderTimetable();
+    if (changes.fapTimetable || changes.fapAttendance || changes.fapSyllabus || changes.fapSync) renderTimetable();
     if (Object.keys(changes).some((key) => key.startsWith("threads:"))) renderSites();
   });
 
