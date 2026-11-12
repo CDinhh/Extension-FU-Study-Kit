@@ -101,7 +101,7 @@ https://cdinhh.github.io/Extension-FU-Study-Kit/privacy.html
 
 1. `01-list.png`: thread list with checkboxes, badges and the progress bar.
 2. `02-lightbox.png`: image viewer with the question grid, flagged questions and screenshot tools.
-3. `03-popup.png`: popup with the FAP timetable and the attendance tooltip (light theme). Retake for 2.2.0 so the tooltip shows the grade components.
+3. `03-popup.png`: popup with the FAP timetable and the attendance tooltip (light theme). Retake for 2.2.x so the tooltip shows the grade components.
 4. `04-account.png`: account menu with Google Drive sync and the Google Calendar options (dark theme).
 5. `05-fuexam.png`: the checklist and progress bar on FuExam.
 
@@ -118,7 +118,7 @@ committed files with forward-slash paths, which the Chrome Web Store expects (Po
 
 ```sh
 mkdir -p dist
-git archive --format=zip -o dist/fu-study-kit-2.2.0.zip HEAD manifest.json background.js drive.js calendar.js content.js content.css lightbox.js lightbox.css popup.html popup.css popup.js lib assets/fonts assets/icons/icon-16.png assets/icons/icon-32.png assets/icons/icon-48.png assets/icons/icon-128.png assets/icons/avatar.jpg
+git archive --format=zip -o dist/fu-study-kit-2.2.1.zip HEAD manifest.json background.js drive.js calendar.js content.js content.css lightbox.js lightbox.css popup.html popup.css popup.js lib assets/fonts assets/icons/icon-16.png assets/icons/icon-32.png assets/icons/icon-48.png assets/icons/icon-128.png assets/icons/avatar.jpg
 ```
 
 This leaves out `docs`, `tests`, `store`, the READMEs and the 512 px logo master. `dist/` is ignored

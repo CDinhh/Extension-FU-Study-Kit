@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FU Study Kit: Exam Checklist & FAP Timetable",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Track exam revision on FuOverflow and FuExam, flag unsure questions, and see your FAP weekly timetable in the popup. Not official.",
   "permissions": [
     "storage",
