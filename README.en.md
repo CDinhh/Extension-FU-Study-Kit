@@ -27,6 +27,7 @@ The extension's interface is in Vietnamese.
 ## Features
 
 - **FAP timetable** right in the popup: every week of the term, exams highlighted, last update always shown.
+- **Grade components** (optional) from the FLM syllabus: each part's weight and minimum score; click a class to open its syllabus.
 - **Attendance**: hover a class to see your absences and how many you can still miss before the 20% limit.
 - **Revision checklist** on FuOverflow and FuExam, plus the exams you are studying and the question you reached.
 - **Image viewer**: jump to any question, flag the unsure ones, cover the answer, and capture every question with its discussion as a ZIP.

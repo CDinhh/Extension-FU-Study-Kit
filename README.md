@@ -26,6 +26,7 @@ https://github.com/user-attachments/assets/7f9111ff-f5e7-4f6f-a9c2-8114c7d1459f
 
 - **Thời khóa biểu FAP** ngay trong popup: đủ mọi tuần trong kỳ, lịch thi tô màu riêng, luôn ghi lần cập nhật gần nhất.
 - **Điểm danh**: rê chuột vào một buổi học để xem đã vắng bao nhiêu, còn được vắng mấy buổi trước mức 20%.
+- **Thành phần điểm** (tùy chọn) từ syllabus trên FLM: trọng số từng phần, điểm tối thiểu; bấm vào ô môn học để mở syllabus.
 - **Checklist đề đã ôn** trên FuOverflow và FuExam, kèm đề đang học và câu đang làm dở.
 - **Khung xem ảnh đề**: nhảy tới câu bất kỳ, gắn cờ câu chưa chắc, che đáp án, chụp toàn bộ câu kèm khung thảo luận thành file ZIP.
 - **Môn đã ôn** trong popup, bấm là mở thẳng đề hoặc trang môn.
