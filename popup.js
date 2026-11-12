@@ -217,7 +217,10 @@
   // One line that always says how fresh the table is and what the sync is doing.
   const ttStatus = (data, sync) => {
     const at = data?.fetchedAt;
-    if (sync?.state === "attention") return ["warn", "Chờ đăng nhập FAP", "Đăng nhập ở tab FAP vừa mở, lịch sẽ tự cập nhật"];
+    if (sync?.state === "attention") {
+      const site = sync.stage?.startsWith("flm") ? "FLM" : "FAP";
+      return ["warn", `Chờ đăng nhập ${site}`, `Đăng nhập ở tab ${site} vừa mở, lịch sẽ tự cập nhật`];
+    }
     if (sync?.stage === "attendance") return ["busy", "Đang đọc điểm danh…", ""];
     if (sync?.stage?.startsWith("flm")) return ["busy", "Đang đọc thành phần điểm…", ""];
     if (sync) return ["busy", `Đang đồng bộ… ${sync.count || 0} tuần`, ""];

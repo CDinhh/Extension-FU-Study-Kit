@@ -278,6 +278,57 @@ function fapOverlay(state, base) {
 const showOverlay = (tabId, state) =>
   chrome.scripting.executeScript({ target: { tabId }, func: fapOverlay, args: [state, chrome.runtime.getURL("")] }).catch(() => {});
 
+// Runs inside a FAP / FLM page of the sync tab when the user has to step in: a card at the top
+// that says why the tab came up, without covering the page's own sign-in buttons. Only ever shown
+// in the tab the extension opened; a FAP or FLM tab the user opened is never touched.
+function fapLoginBanner(site, base) {
+  const ID = "fsk-login-banner";
+  document.getElementById(ID)?.remove();
+  // A Cloudflare check is not a sign-in: say so, or the card reads wrong.
+  const check = /just a moment|attention required/i.test(document.title) || !!document.querySelector("#challenge-form, [name='cf-turnstile-response']");
+  const name = site === "flm" ? "FLM" : "FAP";
+  const title = check ? `Xác minh trên ${name} để tiếp tục đồng bộ` : site === "flm" ? "Đăng nhập FLM để lấy thành phần điểm" : "Đăng nhập FAP để đồng bộ lịch học";
+  const host = document.createElement("div");
+  host.id = ID;
+  host.attachShadow({ mode: "open" }).innerHTML = `<style>
+      :host { all: initial; }
+      .bar { position: fixed; top: 14px; left: 50%; z-index: 2147483647; display: flex; align-items: center; gap: 12px;
+        width: max-content; max-width: calc(100vw - 32px); padding: 10px 12px 10px 10px; box-sizing: border-box;
+        transform: translateX(-50%); border-radius: 12px; border: 1px solid rgba(15, 23, 42, .1); background: rgba(255, 255, 255, .96);
+        box-shadow: 0 14px 36px -16px rgba(15, 23, 42, .4); color: #161a22;
+        font: 500 13px/1.4 FSKVietnam, "Segoe UI", system-ui, sans-serif; animation: drop .35s cubic-bezier(.32, .72, 0, 1); }
+      img { flex: none; width: 28px; height: 28px; border-radius: 7px; box-shadow: 0 0 0 1px rgba(15, 23, 42, .09); }
+      b { display: block; font-size: 13px; font-weight: 600; }
+      span { color: rgba(22, 26, 34, .56); font-size: 12px; }
+      button { flex: none; margin-left: 4px; padding: 6px 12px; border: 1px solid rgba(15, 23, 42, .14); border-radius: 8px;
+        background: transparent; color: inherit; font: inherit; font-size: 12px; cursor: pointer; }
+      button:hover { background: rgba(15, 23, 42, .05); }
+      @keyframes drop { from { opacity: 0; transform: translate(-50%, -10px); } }
+      @media (prefers-color-scheme: dark) {
+        .bar { background: rgba(22, 24, 30, .96); border-color: rgba(255, 255, 255, .1); color: #e8eaf0; box-shadow: 0 14px 36px -16px rgba(0, 0, 0, .8); }
+        img { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1); } span { color: rgba(232, 234, 240, .56); }
+        button { border-color: rgba(255, 255, 255, .16); } button:hover { background: rgba(255, 255, 255, .06); }
+      }
+      @media (prefers-reduced-motion: reduce) { .bar { animation: none; } }
+    </style>
+    <div class="bar" role="status"><img alt="" /><div><b></b><span>FU Study Kit sẽ tự đọc tiếp ngay khi bạn xong.</span></div></div>`;
+  const root = host.shadowRoot;
+  root.querySelector("b").textContent = title;
+  if (base) root.querySelector("img").src = `${base}assets/icons/icon-128.png`;
+  else root.querySelector("img").remove();
+  // Grade components are a bonus: FLM can be skipped, the sync then finishes without them.
+  if (site === "flm") {
+    const skip = document.createElement("button");
+    skip.type = "button";
+    skip.textContent = "Bỏ qua";
+    skip.addEventListener("click", () => chrome.runtime.sendMessage({ action: "flmSkip" }).catch(() => {}));
+    root.querySelector(".bar").append(skip);
+  }
+  document.documentElement.append(host);
+}
+const showLoginBanner = (tabId, site) =>
+  chrome.scripting.executeScript({ target: { tabId }, func: fapLoginBanner, args: [site, chrome.runtime.getURL("")] }).catch(() => {});
+
 // "Political economics of Marxism – Leninism (MLN122) (Half2_SE1915)" -> name, code, group.
 const parseCourse = (label) => {
   const m = /^(.*?)\s*\(([^()]+)\)\s*\(([^()]+)\)\s*$/.exec(label);
@@ -306,7 +357,7 @@ async function finishFapSync(fapSync) {
   if (codes === null) return endFapSync(fapSync, { ...metas, flm: "bỏ qua" });
   if (!codes.length) return endFapSync(fapSync, { ...metas, flm: "đã có" });
   // Grade components live on FLM: one page change, then everything is fetched inside that page.
-  await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "flm", codes, metas } });
+  await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "flm", codes, metas, state: "loading", redirected: false } });
   chrome.tabs.update(tabId, { url: FLM_SEARCH }).catch(() => {});
 }
 
@@ -363,16 +414,29 @@ async function readSyllabi(codes) {
 
 // The sync tab has landed on FLM: read the components, keep them, finish.
 async function readFlm(tab, fapSync) {
-  await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "flm-reading" } }); // one read per sync
-  let found = null;
-  // Anywhere else (the FLM sign-in) the step is skipped: grade components are a bonus, not worth a login wall.
-  if (tab.url?.startsWith(FLM_SEARCH)) {
-    await showOverlay(tab.id, { stage: "flm", text: "đang mở…", metas: fapSync.metas, progress: null });
-    try {
-      [{ result: found }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readSyllabi, args: [fapSync.codes] });
-    } catch {
-      // Page navigated away mid-read: keep what is stored.
+  if (!tab.url?.startsWith(FLM_SEARCH)) {
+    // Signed in but landed elsewhere (FLM's home after the sign-in): back to the search page, once.
+    const onFlm = tab.url?.startsWith(FLM_ORIGIN) && !/\/Login/i.test(new URL(tab.url).pathname);
+    if (onFlm && !fapSync.redirected) {
+      await chrome.storage.session.set({ fapSync: { ...fapSync, redirected: true } });
+      chrome.tabs.update(tab.id, { url: FLM_SEARCH }).catch(() => {});
+      return;
     }
+    // FLM wants a sign-in: bring the tab up and wait; the next load comes back here.
+    if (fapSync.state !== "attention") {
+      await chrome.storage.session.set({ fapSync: { ...fapSync, state: "attention", redirected: false } });
+      chrome.tabs.update(tab.id, { active: true }).catch(() => {});
+    }
+    if (tab.url?.startsWith(FLM_ORIGIN)) showLoginBanner(tab.id, "flm");
+    return;
+  }
+  await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "flm-reading", state: "loading" } }); // one read per sync
+  let found = null;
+  await showOverlay(tab.id, { stage: "flm", text: "đang mở…", metas: fapSync.metas, progress: null });
+  try {
+    [{ result: found }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readSyllabi, args: [fapSync.codes] });
+  } catch {
+    // Page navigated away mid-read: keep what is stored.
   }
   if (found && typeof found === "object") {
     const { fapSyllabus = {} } = await chrome.storage.local.get("fapSyllabus");
@@ -395,7 +459,7 @@ async function readFlm(tab, fapSync) {
     }
     await chrome.storage.local.set({ fapSyllabus });
   }
-  await endFapSync(fapSync, { ...fapSync.metas, flm: found ? `${Object.keys(found).length} môn` : "chưa đăng nhập FLM" });
+  await endFapSync(fapSync, { ...fapSync.metas, flm: found ? `${Object.keys(found).length} môn` : "không đọc được" });
 }
 
 // Everything read: show "done", close the sync tab and hand the screen back.
@@ -467,6 +531,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
     await chrome.storage.session.set({ fapSync: { ...fapSync, state: "attention" } });
     chrome.tabs.update(tabId, { active: true }).catch(() => {});
   }
+  // On every FAP page while waiting (the sign-in provider is another site and stays untouched).
+  if (tab.url?.startsWith(FAP_ORIGIN)) showLoginBanner(tabId, "fap");
 });
 
 chrome.tabs.onRemoved.addListener(async (tabId) => {
@@ -510,6 +576,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (fromExtension && message?.action === "calendarEnable") calendarEnable();
   if (fromExtension && message?.action === "calendarSync") calendarSync();
   if (fromExtension && message?.action === "calendarClear") calendarClear();
+  // "Bỏ qua" on the FLM sign-in card: only the sync tab, and only while it waits on FLM.
+  if (message?.action === "flmSkip") {
+    chrome.storage.session.get("fapSync").then(({ fapSync }) => {
+      if (fapSync?.stage === "flm" && sender.tab?.id === fapSync.tabId) endFapSync(fapSync, { ...fapSync.metas, flm: "bỏ qua" });
+    });
+  }
   if (message?.action === "fapWeek" || message?.action === "fapDone") {
     onFapCrawl(message, sender).finally(() => sendResponse());
     return true;
