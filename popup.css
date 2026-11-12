@@ -517,24 +517,24 @@ body {
   text-decoration: underline;
 }
 
-.pp-tip__action {
+.pp-tip__head {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  margin-top: 9px;
-  padding: 6px 10px;
-  border: 1px solid var(--hair-strong);
-  border-radius: var(--r-sm);
-  color: var(--accent-text);
-  font-weight: 500;
-  text-decoration: none;
-  transition: background 200ms var(--ease), border-color 200ms var(--ease);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.pp-tip__action:hover {
-  border-color: rgba(var(--accent-rgb), 0.35);
-  background: rgba(var(--accent-rgb), 0.07);
+/* A smaller copy of the "Mở trên FAP" button (.pp-tt__refresh). */
+.pp-tip .pp-tip__open {
+  width: 24px;
+  height: 24px;
+  margin: -3px -4px 0 0;
+  border-radius: 6px;
+}
+
+.pp-tip .pp-tip__open svg {
+  width: 13px;
+  height: 13px;
 }
 
 .pp-tip__list dd {
