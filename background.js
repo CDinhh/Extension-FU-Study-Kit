@@ -1,5 +1,12 @@
 importScripts("lib/store-core.js", "lib/storage.js", "drive.js", "calendar.js");
 
+// A fresh install starts with both forum clean-ups on; an update keeps whatever the user chose.
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  if (reason !== "install") return;
+  const { prefs } = await chrome.storage.local.get("prefs");
+  await chrome.storage.local.set({ prefs: { hideDonate: true, hideCommunity: true, ...prefs } });
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.action === "captureTab") {
     // Any script on the forum page can ask for a capture through the bridge, so only ever
