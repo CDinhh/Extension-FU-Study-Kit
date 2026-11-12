@@ -243,7 +243,7 @@ function fapOverlay(state, base) {
         <li data-s="tt"><span class="ico"></span><span class="name">Thời khóa biểu</span><span class="meta"></span></li>
         <li data-s="att"><span class="ico"></span><span class="name">Điểm danh</span><span class="meta"></span></li>
       </ol>
-      <footer>Tab sẽ tự đóng khi xong. Đóng tab nếu muốn dừng.</footer>
+      <footer>Tab sẽ tự đóng khi xong.</footer>
       <div class="bar"><div class="fill"></div></div>
     </div></div>`;
     if (base) host.shadowRoot.querySelector("img").src = `${base}assets/icons/icon-128.png`;
