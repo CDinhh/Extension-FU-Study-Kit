@@ -161,7 +161,7 @@ async function readAttendance() {
   const courses = [...course.options].map((option) => ({ id: option.value, label: text(option) })).filter((c) => c.id);
   const out = [];
   for (const [i, c] of courses.entries()) {
-    show({ stage: "att", text: `Đang đọc điểm danh môn ${i + 1}/${courses.length}`, progress: i / courses.length });
+    show({ stage: "att", text: `${i + 1}/${courses.length} môn`, progress: i / courses.length });
     const doc = c.id === course.value ? first : await load(`?termId=${encodeURIComponent(term.value)}&courseId=${encodeURIComponent(c.id)}`).catch(() => null);
     if (doc?.getElementById("attendance-report-course")?.value !== c.id) continue;
     out.push({
@@ -193,84 +193,75 @@ function fapOverlay(state, base) {
     }
     host = document.createElement("div");
     host.id = ID;
-    // Shadow root: FAP's own CSS cannot reach in.
+    // Shadow root: FAP's own CSS cannot reach in. Colours and radii follow the popup.
     host.attachShadow({ mode: "open" }).innerHTML = `<style>
       :host { all: initial; }
       * { box-sizing: border-box; }
       .back { position: fixed; inset: 0; z-index: 2147483647; display: grid; place-items: center; padding: 16px;
-        --accent: #2563eb; --accent-rgb: 37, 99, 235; --done: #138a55; --done-rgb: 19, 138, 85; --text: #161a22; --muted: rgba(22, 26, 34, .56);
-        --glass: rgba(255, 255, 255, .72); --edge: rgba(255, 255, 255, .85); --track: rgba(15, 23, 42, .07);
-        background: rgba(243, 244, 247, .6);
-        backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4);
-        font: 500 14px/1.45 FSKVietnam, "Segoe UI", system-ui, sans-serif; color: var(--text); animation: fade .3s ease-out; }
-      .card { width: min(380px, 100%); padding: 28px 28px 22px; border-radius: 26px; text-align: center;
-        background: var(--glass); border: 1px solid var(--edge);
-        box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 30px 70px -24px rgba(15, 23, 42, .35), 0 8px 24px -12px rgba(15, 23, 42, .18);
-        animation: rise .5s cubic-bezier(.32, .72, 0, 1); }
-      .logo { position: relative; width: 76px; height: 76px; margin: 0 auto 18px; display: grid; place-items: center; }
-      .logo img { width: 52px; height: 52px; border-radius: 16px; box-shadow: 0 10px 24px -10px rgba(var(--accent-rgb), .55); }
-      .ring { position: absolute; inset: 0; border-radius: 50%;
-        background: conic-gradient(from 0deg, transparent 0 55%, rgba(var(--accent-rgb), .9));
-        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
-        mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
-        animation: spin 1s linear infinite; transition: opacity .3s; }
-      .tick { position: absolute; right: 2px; bottom: 2px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
-        background: var(--done); color: #fff; box-shadow: 0 0 0 3px var(--glass); transform: scale(0); transition: transform .4s cubic-bezier(.34, 1.56, .64, 1); }
-      .tick svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-      h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
-      .step { margin: 4px 0 18px; min-height: 20px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-      .steps { display: flex; justify-content: center; gap: 6px; margin-bottom: 14px; }
-      .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px 5px 9px; border-radius: 999px; font-size: 12px;
-        color: var(--muted); background: var(--track); transition: background .3s, color .3s; }
-      .chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .45; transition: opacity .3s; }
-      .chip.on { color: var(--accent); background: rgba(var(--accent-rgb), .1); }
-      .chip.on i { opacity: 1; animation: pulse 1.2s ease-in-out infinite; }
-      .chip.ok { color: var(--done); background: rgba(var(--done-rgb), .1); }
-      .chip.ok i { opacity: 1; }
-      .bar { height: 6px; border-radius: 99px; background: var(--track); overflow: hidden; }
-      .fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, rgba(var(--accent-rgb), .6), var(--accent));
-        transition: width .45s cubic-bezier(.32, .72, 0, 1); }
-      .bar.wait .fill { width: 35%; animation: slide 1.3s cubic-bezier(.45, 0, .55, 1) infinite; }
-      small { display: block; margin-top: 14px; color: var(--muted); font-size: 11.5px; }
-      .done .ring { animation: none; opacity: 0; }
-      .done .tick { transform: scale(1); }
+        --accent: #2563eb; --done: #138a55; --text: #161a22; --muted: rgba(22, 26, 34, .56); --hair: rgba(15, 23, 42, .09);
+        --card: rgba(255, 255, 255, .9); --cell: rgba(15, 23, 42, .035);
+        background: rgba(243, 244, 247, .6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        font: 500 13px/1.4 FSKVietnam, "Segoe UI", system-ui, sans-serif; color: var(--text); animation: fade .2s ease-out; }
+      .card { position: relative; overflow: hidden; width: min(340px, 100%); border-radius: 12px; background: var(--card);
+        border: 1px solid var(--hair); box-shadow: 0 18px 48px -20px rgba(15, 23, 42, .35);
+        animation: rise .35s cubic-bezier(.32, .72, 0, 1); }
+      header { display: flex; align-items: center; gap: 10px; padding: 14px 16px 12px; border-bottom: 1px solid var(--hair); }
+      header img { width: 28px; height: 28px; border-radius: 7px; box-shadow: 0 0 0 1px var(--hair); }
+      h2 { margin: 0; font-size: 13.5px; font-weight: 600; }
+      .sub { margin: 0; color: var(--muted); font-size: 12px; }
+      ol { list-style: none; margin: 0; padding: 8px; }
+      li { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; color: var(--muted); transition: background .2s, color .2s; }
+      li.on { background: var(--cell); color: var(--text); }
+      li.ok { color: var(--text); }
+      .ico { flex: none; position: relative; width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--hair); transition: background .2s, border-color .2s; }
+      li.on .ico { border-radius: 50%; border-color: rgba(37, 99, 235, .2); border-top-color: var(--accent); animation: spin .7s linear infinite; }
+      li.ok .ico { background: var(--done); border-color: var(--done); }
+      li.ok .ico::after { content: ""; position: absolute; left: 4.5px; top: 1.5px; width: 3.5px; height: 7px;
+        border: solid #fff; border-width: 0 1.75px 1.75px 0; transform: rotate(45deg); }
+      .name { flex: 1; }
+      .meta { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+      footer { padding: 0 16px 14px; color: var(--muted); font-size: 11.5px; }
+      .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; }
+      .fill { height: 100%; width: 0; background: var(--accent); transition: width .4s cubic-bezier(.32, .72, 0, 1); }
+      .bar.wait .fill { width: 30%; animation: slide 1.2s cubic-bezier(.45, 0, .55, 1) infinite; }
       .done .fill { background: var(--done); }
       @keyframes spin { to { transform: rotate(360deg); } }
       @keyframes fade { from { opacity: 0; } }
-      @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.96); } }
-      @keyframes pulse { 50% { transform: scale(.6); } }
-      @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
+      @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+      @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
       @media (prefers-color-scheme: dark) {
-        .back { --text: #e8eaf0; --muted: rgba(232, 234, 240, .58); --accent: #5b8cff; --accent-rgb: 91, 140, 255; --done: #34c07f; --done-rgb: 52, 192, 127;
-          --glass: rgba(24, 27, 34, .74); --edge: rgba(255, 255, 255, .08); --track: rgba(255, 255, 255, .08);
-          background: rgba(11, 12, 15, .72); }
-        .card { box-shadow: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 30px 70px -24px rgba(0, 0, 0, .8); }
+        .back { --accent: #5b8cff; --done: #34c07f; --text: #e8eaf0; --muted: rgba(232, 234, 240, .56); --hair: rgba(255, 255, 255, .09);
+          --card: rgba(22, 24, 30, .92); --cell: rgba(255, 255, 255, .05); background: rgba(11, 12, 15, .7); }
+        .card { box-shadow: 0 18px 48px -20px rgba(0, 0, 0, .8); }
+        li.on .ico { border-color: rgba(91, 140, 255, .25); border-top-color: var(--accent); }
       }
       @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; } }
     </style>
     <div class="back"><div class="card" role="status" aria-live="polite">
-      <div class="logo"><div class="ring"></div><img alt="" /><div class="tick"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></div></div>
-      <h2></h2>
-      <div class="step"></div>
-      <div class="steps"><span class="chip" data-s="tt"><i></i>Thời khóa biểu</span><span class="chip" data-s="att"><i></i>Điểm danh</span></div>
+      <header><img alt="" /><div><h2>FU Study Kit</h2><p class="sub"></p></div></header>
+      <ol>
+        <li data-s="tt"><span class="ico"></span><span class="name">Thời khóa biểu</span><span class="meta"></span></li>
+        <li data-s="att"><span class="ico"></span><span class="name">Điểm danh</span><span class="meta"></span></li>
+      </ol>
+      <footer>Tab sẽ tự đóng khi xong. Đóng tab nếu muốn dừng.</footer>
       <div class="bar"><div class="fill"></div></div>
-      <small>Tab sẽ tự đóng khi xong · đóng tab nếu muốn dừng</small>
     </div></div>`;
     if (base) host.shadowRoot.querySelector("img").src = `${base}assets/icons/icon-128.png`;
+    else host.shadowRoot.querySelector("img").remove();
     document.documentElement.append(host);
   }
   const root = host.shadowRoot;
   const done = state.stage === "done";
-  const order = ["tt", "att"];
-  const now = done ? order.length : order.indexOf(state.stage);
+  const rows = [...root.querySelectorAll("li")];
+  const now = done ? rows.length : rows.findIndex((row) => row.dataset.s === state.stage);
   root.querySelector(".card").classList.toggle("done", done);
-  root.querySelector("h2").textContent = done ? "Đã cập nhật xong" : "Đang cập nhật lịch học";
-  root.querySelector(".step").textContent = state.text || "";
-  for (const chip of root.querySelectorAll(".chip")) {
-    const at = order.indexOf(chip.dataset.s);
-    chip.classList.toggle("ok", at < now);
-    chip.classList.toggle("on", at === now);
-  }
+  root.querySelector(".sub").textContent = done ? "Đã cập nhật xong" : "Đang cập nhật lịch học…";
+  rows.forEach((row, i) => {
+    row.classList.toggle("ok", i < now);
+    row.classList.toggle("on", i === now);
+  });
+  // The row being read (the last one once done) shows the count.
+  if (state.text != null) rows[Math.min(now, rows.length - 1)].querySelector(".meta").textContent = state.text;
   const progress = done ? 1 : state.progress;
   root.querySelector(".bar").classList.toggle("wait", progress == null);
   root.querySelector(".fill").style.width = progress == null ? "" : `${Math.round(progress * 100)}%`;
@@ -286,7 +277,7 @@ const parseCourse = (label) => {
 
 // Timetable stored: read attendance in the same tab, keep it, show "done" and close the tab.
 async function finishFapSync({ tabId, back }) {
-  await showOverlay(tabId, { stage: "att", text: "Đang mở báo cáo điểm danh…", progress: null });
+  await showOverlay(tabId, { stage: "att", text: "đang mở…", progress: null });
   let page = null;
   try {
     [{ result: page }] = await chrome.scripting.executeScript({ target: { tabId }, func: readAttendance });
@@ -301,7 +292,7 @@ async function finishFapSync({ tabId, back }) {
     : null;
   if (courses) await chrome.storage.local.set({ fapAttendance: { fetchedAt: Date.now(), term: str(page.term), courses } });
   await chrome.storage.session.remove("fapSync");
-  await showOverlay(tabId, { stage: "done", text: courses ? `Đã đọc thời khóa biểu và điểm danh ${courses.length} môn` : "Đã đọc thời khóa biểu" });
+  await showOverlay(tabId, { stage: "done", text: courses ? `${courses.length} môn` : "giữ bản cũ" });
   setTimeout(async () => {
     // Only hand the screen back if the user is still watching the sync tab.
     const watching = await chrome.tabs.get(tabId).then((t) => t.active, () => false);
@@ -342,7 +333,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   let started = null;
   try {
     // Cover the page while it is read; taken off again below if it turns out to need the user.
-    if (tab.url?.startsWith(target)) await showOverlay(tabId, { stage: "tt", text: "Đang đọc tuần đầu tiên…", progress: null });
+    if (tab.url?.startsWith(target)) await showOverlay(tabId, { stage: "tt", text: "đang mở…", progress: null });
     // Not awaited to the end: the crawl reports through fapWeek / fapDone messages.
     const run = chrome.scripting.executeScript({ target: { tabId }, func: crawlTimetable, args: [!!fapSync.full] });
     run.catch(() => {});
@@ -387,7 +378,7 @@ async function onFapCrawl(message, sender) {
     await chrome.storage.local.set({ fapTimetable: { fetchedAt: fapTimetable?.fetchedAt || 0, weeks } });
     const count = (fapSync.count || 0) + 1;
     await chrome.storage.session.set({ fapSync: { ...fapSync, state: "loading", count } });
-    showOverlay(fapSync.tabId, { stage: "tt", text: `Đã đọc ${count} tuần`, progress: null });
+    showOverlay(fapSync.tabId, { stage: "tt", text: `${count} tuần`, progress: null });
     return;
   }
   for (const key of Array.isArray(message.drop) ? message.drop : []) delete weeks[key];
