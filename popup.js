@@ -168,17 +168,10 @@
   const TT_STALE_MS = 60 * 60 * 1000;
   let ttEnabled = false;
 
-  // FLM holds each course's grade components. Asked for once, on a click, so people who turned the
-  // timetable on before this existed get the question too; a "no" is not asked again.
+  // FLM holds each course's grade components. Asked for with the timetable, or from its own card
+  // (people who turned the timetable on before FLM reading existed).
   const FLM = { origins: ["https://flm.fpt.edu.vn/*"] };
-  const ttSync = async (focus, full) => {
-    if (!prefs.flmAsked) {
-      prefs = { ...prefs, flmAsked: true };
-      await chrome.storage.local.set({ prefs }); // saved first: the prompt can close the popup
-      await chrome.permissions.request(FLM).catch(() => false);
-    }
-    chrome.runtime.sendMessage({ action: "fapSync", focus, full }).catch(() => {});
-  };
+  const ttSync = (focus, full) => chrome.runtime.sendMessage({ action: "fapSync", focus, full }).catch(() => {});
 
   // Weeks are stored under their Monday as yyyy-mm-dd, the same key background.js writes.
   const ttKey = (date) => {
@@ -238,14 +231,11 @@
     const attTone = att && attState(att).tone;
     if (attTone) cell.classList.add(`${attTone}-att`);
     cell.tabIndex = 0;
-    cell.setAttribute("role", "link");
-    // The whole cell opens the course on FLM; its own "Online" link keeps opening the class.
-    const openFlm = () => chrome.tabs.create({ url: FuoCore.flmUrl(code, gradeParts[code]) });
-    cell.addEventListener("click", (e) => !e.target.closest("a") && openFlm());
-    cell.addEventListener("keydown", (e) => e.key === "Enter" && !e.target.closest("a") && openFlm());
+    // Keyboard users cannot reach the tooltip's button, so Enter on the cell opens FLM too.
+    cell.addEventListener("keydown", (e) => e.key === "Enter" && e.target === cell && chrome.tabs.create({ url: FuoCore.flmUrl(code, gradeParts[code]) }));
     cell.addEventListener("mouseenter", () => showTip(cell, item));
     cell.addEventListener("focus", () => showTip(cell, item));
-    cell.addEventListener("mouseleave", hideTip);
+    cell.addEventListener("mouseleave", hideTipSoon);
     cell.addEventListener("blur", hideTip);
     if (item.kind) cell.append(el("span", "pp-tt__kind", exam ? "Lịch thi" : item.kind));
     cell.append(el("strong", "", code));
@@ -340,7 +330,9 @@
     const dl = el("dl", "pp-tip__list");
     for (const [label, value, cls] of rows) {
       if (!value) continue;
-      dl.append(el("dt", "", label), el("dd", cls || "", value));
+      const dd = el("dd", cls || "");
+      dd.append(value); // text, or a node such as a link
+      dl.append(el("dt", "", label), dd);
     }
     return dl;
   };
@@ -360,7 +352,7 @@
         ["Thời gian", item.time],
         ["Phòng", real(item.room)],
         ["Giảng viên", real(item.teacher)],
-        ["Hình thức", item.online && "Online"],
+        ["Hình thức", item.online && onlineLink(item)],
         ["Buổi này", session, `is-${item.attended || "none"}`]
       ])
     );
@@ -382,15 +374,35 @@
     if (gradeParts[code]) tip.append(gradeBox(gradeParts[code]));
     // Component names run long (often Vietnamese); a wider tip keeps them on one line and inside the popup.
     tip.classList.toggle("is-wide", !!gradeParts[code]?.items?.length);
-    tip.append(el("p", "pp-tip__hint", "Bấm vào ô để mở syllabus trên FLM ↗"));
-    placeTip(cell);
+    const flm = link("pp-tip__action", gradeParts[code]?.id ? "Mở syllabus trên FLM" : "Tìm môn trên FLM", FuoCore.flmUrl(code, gradeParts[code]));
+    flm.append(arrowIcon());
+    tip.append(flm);
+    placeTip(cell, true);
   }
+
+  // "Online" with the class link when FAP gave one; the link comes from the FAP page, so https only.
+  const onlineLink = (item) => {
+    if (!item.meet?.startsWith("https://")) return "Online";
+    const a = link("pp-tip__link", "Online · Vào lớp", item.meet);
+    a.append(arrowIcon());
+    return a;
+  };
+  const arrowIcon = () => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.innerHTML = '<path d="M8 16 16 8M9.5 8H16v6.5" />';
+    return svg;
+  };
 
   let tipFor = null; // the element the tooltip is showing for
 
   // Under the anchor when it fits, otherwise above; always inside the popup.
-  function placeTip(anchor) {
+  // live: the course tooltip can be hovered into, to copy from it or use its links.
+  function placeTip(anchor, live = false) {
+    clearTimeout(tipTimer);
     tipFor = anchor;
+    tip.classList.toggle("is-live", live);
     tip.hidden = false;
     const r = anchor.getBoundingClientRect();
     const view = document.documentElement;
@@ -401,9 +413,19 @@
   }
 
   function hideTip() {
+    clearTimeout(tipTimer);
     tip.hidden = true;
     tipFor = null;
   }
+
+  // Leaving a course cell waits a moment, long enough to cross the gap into its tooltip.
+  let tipTimer = 0;
+  const hideTipSoon = () => {
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(hideTip, 200);
+  };
+  tip.addEventListener("mouseenter", () => tip.classList.contains("is-live") && clearTimeout(tipTimer));
+  tip.addEventListener("mouseleave", () => tip.classList.contains("is-live") && hideTipSoon());
 
   // Buttons explain themselves with the same tooltip (data-tip-title + data-tip in popup.html).
   function showTextTip(node) {
@@ -428,12 +450,14 @@
   };
 
   const renderTimetable = async () => {
-    const [granted, local, session] = await Promise.all([
+    const [granted, flmGranted, local, session] = await Promise.all([
       chrome.permissions.contains(FAP),
+      chrome.permissions.contains(FLM),
       chrome.storage.local.get(["fapTimetable", "fapAttendance", "fapSyllabus", "prefs"]),
       chrome.storage.session.get("fapSync")
     ]);
     const enabled = granted && !!local.prefs?.timetable;
+    $("flmPerm").hidden = !enabled || flmGranted;
     const data = local.fapTimetable?.weeks ? local.fapTimetable : null; // an older single-week cache is refetched
     ttEnabled = enabled;
     // A timetable synced from Google Drive shows even where FAP reading is not turned on.
@@ -487,7 +511,7 @@
 
   async function enableTimetable() {
     // Save the opt-in first: the permission prompt can close the popup before it resolves.
-    prefs = { ...prefs, timetable: true, flmAsked: true };
+    prefs = { ...prefs, timetable: true };
     await chrome.storage.local.set({ prefs });
     try {
       // One prompt for both sites. The user just asked for it, so the first read starts right away
@@ -781,6 +805,14 @@
       say(`Không xin được quyền: ${err.message}`, "err");
     }
     renderPermission();
+  });
+
+  $("flmGrant").addEventListener("click", async () => {
+    try {
+      if (await chrome.permissions.request(FLM)) say("Đã cho phép. Bấm làm mới thời khóa biểu để lấy thành phần điểm.");
+    } catch (err) {
+      say(`Không xin được quyền: ${err.message}`, "err");
+    }
   });
 
   // The permission prompt can outlive (or close) the popup, so react to the grant itself.
