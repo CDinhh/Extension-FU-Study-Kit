@@ -30,7 +30,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // --- FAP weekly timetable ---
 // Cloudflare answers 403 to a fetch from the extension origin, so the timetable is read from a
-// real FAP tab: open it in the background, walk the weeks with the page's own prev/next buttons,
+// real FAP tab: open it (up front on a click), walk the weeks with the page's own prev/next buttons,
 // close it. When FAP wants a login or a human check instead, the tab is brought forward and
 // read once the user is through.
 const FAP_ORIGIN = "https://fap.fpt.edu.vn";
