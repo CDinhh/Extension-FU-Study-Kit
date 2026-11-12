@@ -235,6 +235,11 @@
     const attTone = att && attState(att).tone;
     if (attTone) cell.classList.add(`${attTone}-att`);
     cell.tabIndex = 0;
+    cell.setAttribute("role", "link");
+    // The whole cell opens the course on FLM; its own "Online" link keeps opening the class.
+    const openFlm = () => chrome.tabs.create({ url: FuoCore.flmUrl(code, gradeParts[code]) });
+    cell.addEventListener("click", (e) => !e.target.closest("a") && openFlm());
+    cell.addEventListener("keydown", (e) => e.key === "Enter" && !e.target.closest("a") && openFlm());
     cell.addEventListener("mouseenter", () => showTip(cell, item));
     cell.addEventListener("focus", () => showTip(cell, item));
     cell.addEventListener("mouseleave", hideTip);
@@ -306,13 +311,19 @@
   // --- Grade components, read from the FLM syllabus by background.js, keyed by course code. ---
   let gradeParts = {};
 
-  // "Final Project Presentation:" | 1 | "40.0%" | "5" -> ["Final Project Presentation", "40% · cần ≥ 5"].
-  // A criterion of ">0" (just take it) is on nearly every row, so only real minimums are shown.
-  const gradeRow = (it) => {
-    const name = it.category.replace(/[\s:]+$/, "") + (Number(it.part) > 1 ? ` (${it.part} lần)` : "");
-    const weight = Number.isFinite(parseFloat(it.weight)) ? `${parseFloat(it.weight)}%` : it.weight;
-    const min = /^\d+(\.\d+)?$/.test(it.criteria) ? (Number(it.criteria) > 0 ? `cần ≥ ${it.criteria}` : "") : /^>\s*0$/.test(it.criteria) ? "" : it.criteria;
-    return [name, min ? `${weight} · ${min}` : weight];
+  // The components box: rows from FuoCore.gradeRows, parts of a group indented; or why there are none.
+  const gradeBox = (entry) => {
+    const box = el("div", "pp-tip__att");
+    box.append(el("span", "pp-tip__label", "Thành phần điểm"));
+    const rows = FuoCore.gradeRows(entry.items);
+    if (!rows.length) {
+      box.append(el("p", "pp-tip__text", entry.id ? "Syllabus trên FLM không ghi thành phần điểm." : "Không tìm thấy môn này trên FLM."));
+      return box;
+    }
+    const dl = el("dl", "pp-tip__list pp-tip__grades");
+    for (const r of rows) dl.append(el("dt", r.sub ? "is-sub" : "", r.label), el("dd", "", r.value));
+    box.append(dl);
+    return box;
   };
 
   // One floating tooltip for every timetable cell, kept inside the popup.
@@ -365,12 +376,10 @@
       );
       tip.append(box);
     }
-    const parts = gradeParts[code]?.items;
-    if (parts?.length) {
-      const box = el("div", "pp-tip__att");
-      box.append(el("span", "pp-tip__label", "Thành phần điểm"), kvList(parts.map(gradeRow)));
-      tip.append(box);
-    }
+    if (gradeParts[code]) tip.append(gradeBox(gradeParts[code]));
+    // Component names run long (often Vietnamese); a wider tip keeps them on one line and inside the popup.
+    tip.classList.toggle("is-wide", !!gradeParts[code]?.items?.length);
+    tip.append(el("p", "pp-tip__hint", "Bấm vào ô để mở syllabus trên FLM ↗"));
     placeTip(cell);
   }
 
