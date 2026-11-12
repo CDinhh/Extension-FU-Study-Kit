@@ -285,7 +285,7 @@ const parseCourse = (label) => {
 };
 
 // Timetable stored: read attendance in the same tab, keep it, show "done" and close the tab.
-async function finishFapSync(tabId) {
+async function finishFapSync({ tabId, back }) {
   await showOverlay(tabId, { stage: "att", text: "Đang mở báo cáo điểm danh…", progress: null });
   let page = null;
   try {
@@ -302,7 +302,15 @@ async function finishFapSync(tabId) {
   if (courses) await chrome.storage.local.set({ fapAttendance: { fetchedAt: Date.now(), term: str(page.term), courses } });
   await chrome.storage.session.remove("fapSync");
   await showOverlay(tabId, { stage: "done", text: courses ? `Đã đọc thời khóa biểu và điểm danh ${courses.length} môn` : "Đã đọc thời khóa biểu" });
-  setTimeout(() => chrome.tabs.remove(tabId).catch(() => {}), 1200); // long enough to see "done"
+  setTimeout(async () => {
+    // Only hand the screen back if the user is still watching the sync tab.
+    const watching = await chrome.tabs.get(tabId).then((t) => t.active, () => false);
+    await chrome.tabs.remove(tabId).catch(() => {});
+    if (!watching || back == null) return;
+    const tab = await chrome.tabs.update(back, { active: true }).catch(() => null);
+    // Needs a focused browser window; anywhere else it just fails quietly.
+    if (tab) chrome.action.openPopup({ windowId: tab.windowId }).catch(() => {});
+  }, 1200); // long enough to see "done"
 }
 
 async function startFapSync(focus, full) {
@@ -317,8 +325,11 @@ async function startFapSync(focus, full) {
       // That tab is gone; start over.
     }
   }
-  const tab = await chrome.tabs.create({ url: FAP_TIMETABLE, active: false });
-  await chrome.storage.session.set({ fapSync: { tabId: tab.id, state: "loading", full, count: 0 } });
+  // A click opens FAP up front (the popup closes as it loses focus) and remembers where to come
+  // back to: the tab the user was on, and the popup, reopened once the sync is done.
+  const [back] = focus ? await chrome.tabs.query({ active: true, lastFocusedWindow: true }) : [];
+  const tab = await chrome.tabs.create({ url: FAP_TIMETABLE, active: !!focus, ...(back ? { index: back.index + 1, windowId: back.windowId } : {}) });
+  await chrome.storage.session.set({ fapSync: { tabId: tab.id, state: "loading", full, count: 0, back: back?.id ?? null } });
 }
 
 chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
@@ -384,7 +395,7 @@ async function onFapCrawl(message, sender) {
   if (fapSync.stage === "attendance") return; // a late fapDone; the timetable is already stored
   // Timetable done; the same tab reads attendance next (not awaited: the page waits on this answer).
   await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "attendance", state: "loading" } });
-  finishFapSync(fapSync.tabId);
+  finishFapSync(fapSync);
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
