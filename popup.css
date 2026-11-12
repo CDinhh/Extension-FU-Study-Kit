@@ -438,6 +438,16 @@ body {
   animation: pp-tip-in 160ms var(--ease) both;
 }
 
+.pp-tip.is-wide {
+  width: 340px;
+}
+
+/* Last resort for a very long syllabus: never taller than the popup. */
+.pp-tip {
+  max-height: calc(100vh - 16px);
+  overflow: hidden;
+}
+
 .pp-tip[hidden] {
   display: none;
 }
@@ -472,6 +482,59 @@ body {
 
 .pp-tip__list dt {
   color: var(--muted);
+}
+
+/* Parts of a grouped component (a final exam split in two), under their group row. */
+.pp-tip__list dt.is-sub {
+  padding-left: 10px;
+}
+
+.pp-tip__grades dd {
+  white-space: nowrap;
+}
+
+/* A course tooltip stays open under the pointer: text can be selected, links clicked. */
+.pp-tip.is-live {
+  pointer-events: auto;
+  user-select: text;
+}
+
+.pp-tip svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+.pp-tip__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.pp-tip__link:hover {
+  text-decoration: underline;
+}
+
+.pp-tip__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 9px;
+  padding: 6px 10px;
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-sm);
+  color: var(--accent-text);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 200ms var(--ease), border-color 200ms var(--ease);
+}
+
+.pp-tip__action:hover {
+  border-color: rgba(var(--accent-rgb), 0.35);
+  background: rgba(var(--accent-rgb), 0.07);
 }
 
 .pp-tip__list dd {

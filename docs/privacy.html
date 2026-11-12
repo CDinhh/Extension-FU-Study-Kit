@@ -90,7 +90,7 @@
                                 </tr>
                                 <tr>
                                     <th scope="row">FAP timetable and attendance</th>
-                                    <td>Only if you turn the timetable on. Course, class, time, room, lecturer, attendance status and online-class link, plus per-course attendance counts. See below.</td>
+                                    <td>Only if you turn the timetable on. Course, class, time, room, lecturer, attendance status and online-class link, plus per-course attendance counts. If you allow FLM, each course's grade components, kept in this browser only. See below.</td>
                                     <td>Same as study progress. If you turn Calendar on, the classes also become events in your Google Calendar.</td>
                                 </tr>
                                 <tr>
@@ -116,8 +116,9 @@
 
                 <section id="fap">
                     <h2>FAP timetable and attendance</h2>
-                    <p>This feature is off by default. When you press "Bật thời khóa biểu" (turn on the timetable), the browser asks you to allow access to <code>fap.fpt.edu.vn</code>. The extension then opens <code>fap.fpt.edu.vn/WeeklyTimetable</code> and <code>fap.fpt.edu.vn/Report/Attendance</code> in a background tab using your existing FAP session, reads the tables shown there and closes the tab.</p>
-                    <p>The extension does not read your password, cookies or any other FAP page. If FAP asks you to sign in, you do that yourself in that tab.</p>
+                    <p>This feature is off by default. When you press "Bật thời khóa biểu" (turn on the timetable), the browser asks you to allow access to <code>fap.fpt.edu.vn</code> and <code>flm.fpt.edu.vn</code>. The extension reads FAP only when you press the refresh button: it opens <code>fap.fpt.edu.vn/WeeklyTimetable</code> in a tab using your existing FAP session, reads the timetable and the attendance report (<code>fap.fpt.edu.vn/Report/Attendance</code>) from that tab, then closes it.</p>
+                    <p>If you also allow <code>flm.fpt.edu.vn</code>, the same tab moves to FLM and reads the grade components (category, weight and pass criterion) from the syllabus of each course you are taking, using your existing FLM session. A syllabus is read again at most once a month. If FLM asks you to sign in, the tab says so: sign in there, or press "Bỏ qua" (skip) to finish without grade components.</p>
+                    <p>The extension does not read your password, cookies, your grades or any other FAP or FLM page. If FAP asks you to sign in, you do that yourself in that tab.</p>
                 </section>
 
                 <section id="google">
@@ -147,6 +148,7 @@
                                 <tr><th scope="row"><code>storage</code></th><td>Keeps your progress, timetable and settings in your browser.</td></tr>
                                 <tr><th scope="row"><code>fuoverflow.com</code>, <code>fuexam.me</code></th><td>Shows checkboxes, progress badges and the question-jump panel on these two forums. The extension runs on no other site.</td></tr>
                                 <tr><th scope="row"><code>scripting</code> and <code>fap.fpt.edu.vn</code> (optional)</th><td>Reads the timetable and attendance report from a FAP tab, after you turn the timetable on.</td></tr>
+                                <tr><th scope="row"><code>flm.fpt.edu.vn</code> (optional)</th><td>Reads the grade components of your courses from their FLM syllabus during a timetable refresh.</td></tr>
                                 <tr><th scope="row"><code>identity</code></th><td>Opens the optional Google sign-in window used for Drive and Calendar.</td></tr>
                                 <tr><th scope="row"><code>&lt;all_urls&gt;</code> (optional)</th><td>Chrome allows tab screenshots only with this permission. Requested when you press "Cho phép" (allow) in the popup, and used only to capture the open forum tab when you press a capture button.</td></tr>
                             </tbody>
@@ -156,7 +158,7 @@
 
                 <section id="sharing">
                     <h2>Sharing</h2>
-                    <p>The extension sends data only to Google, over HTTPS, in order to sign you in, read and write its Drive file and manage its calendar, and to FAP and the forums you visit, which already serve that data to you. Data in your Google Account is also covered by <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>. The extension contains no analytics, advertising or other third-party tracking, and your data is not shared with anyone else.</p>
+                    <p>The extension sends data only to Google, over HTTPS, in order to sign you in, read and write its Drive file and manage its calendar, and to FAP, FLM and the forums you visit, which already serve that data to you. Data in your Google Account is also covered by <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>. The extension contains no analytics, advertising or other third-party tracking, and your data is not shared with anyone else.</p>
                 </section>
 
                 <section id="control">

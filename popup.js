@@ -166,9 +166,11 @@
   // --- FAP timetable: background.js reads it from a FAP tab; here we only render the cache. ---
   const FAP = { origins: ["https://fap.fpt.edu.vn/*"] };
   const TT_STALE_MS = 60 * 60 * 1000;
-  let ttAsked = false;
   let ttEnabled = false;
 
+  // FLM holds each course's grade components. Asked for with the timetable, or from its own card
+  // (people who turned the timetable on before FLM reading existed).
+  const FLM = { origins: ["https://flm.fpt.edu.vn/*"] };
   const ttSync = (focus, full) => chrome.runtime.sendMessage({ action: "fapSync", focus, full }).catch(() => {});
 
   // Weeks are stored under their Monday as yyyy-mm-dd, the same key background.js writes.
@@ -208,11 +210,16 @@
   // One line that always says how fresh the table is and what the sync is doing.
   const ttStatus = (data, sync) => {
     const at = data?.fetchedAt;
-    if (sync?.state === "attention") return ["warn", "Chờ đăng nhập FAP", "Đăng nhập ở tab FAP vừa mở, lịch sẽ tự cập nhật"];
-    if (sync?.stage === "attendance") return ["busy", `Đang đọc điểm danh… ${sync.att?.courses.length || 0} môn`, ""];
+    if (sync?.state === "attention") {
+      const site = sync.stage?.startsWith("flm") ? "FLM" : "FAP";
+      return ["warn", `Chờ đăng nhập ${site}`, `Đăng nhập ở tab ${site} vừa mở, lịch sẽ tự cập nhật`];
+    }
+    if (sync?.stage === "attendance") return ["busy", "Đang đọc điểm danh…", ""];
+    if (sync?.stage?.startsWith("flm")) return ["busy", "Đang đọc thành phần điểm…", ""];
     if (sync) return ["busy", `Đang đồng bộ… ${sync.count || 0} tuần`, ""];
     if (!at) return ["warn", "Chưa có lịch", ""];
-    return [Date.now() - at > TT_STALE_MS ? "warn" : "ok", `Cập nhật ${ttAgo(at)}`, `Cập nhật lúc ${ttClock(at)} · đã lưu ${Object.keys(data.weeks).length} tuần`];
+    const stale = Date.now() - at > TT_STALE_MS;
+    return [stale ? "warn" : "ok", `Cập nhật ${ttAgo(at)}`, `Cập nhật lúc ${ttClock(at)} · đã lưu ${Object.keys(data.weeks).length} tuần${stale ? " · bấm làm mới để cập nhật" : ""}`];
   };
 
   const ttCell = (item, rowTime) => {
@@ -224,9 +231,11 @@
     const attTone = att && attState(att).tone;
     if (attTone) cell.classList.add(`${attTone}-att`);
     cell.tabIndex = 0;
+    // Keyboard users cannot reach the tooltip's button, so Enter on the cell opens FLM too.
+    cell.addEventListener("keydown", (e) => e.key === "Enter" && e.target === cell && chrome.tabs.create({ url: FuoCore.flmUrl(code, gradeParts[code]) }));
     cell.addEventListener("mouseenter", () => showTip(cell, item));
     cell.addEventListener("focus", () => showTip(cell, item));
-    cell.addEventListener("mouseleave", hideTip);
+    cell.addEventListener("mouseleave", hideTipSoon);
     cell.addEventListener("blur", hideTip);
     if (item.kind) cell.append(el("span", "pp-tt__kind", exam ? "Lịch thi" : item.kind));
     cell.append(el("strong", "", code));
@@ -292,6 +301,24 @@
     return { tone: left < 0 ? "is-over" : left === 0 && allowed ? "is-edge" : "" };
   };
 
+  // --- Grade components, read from the FLM syllabus by background.js, keyed by course code. ---
+  let gradeParts = {};
+
+  // The components box: rows from FuoCore.gradeRows, parts of a group indented; or why there are none.
+  const gradeBox = (entry) => {
+    const box = el("div", "pp-tip__att");
+    box.append(el("span", "pp-tip__label", "Thành phần điểm"));
+    const rows = FuoCore.gradeRows(entry.items);
+    if (!rows.length) {
+      box.append(el("p", "pp-tip__text", entry.id ? "Syllabus trên FLM không ghi thành phần điểm." : "Không tìm thấy môn này trên FLM."));
+      return box;
+    }
+    const dl = el("dl", "pp-tip__list pp-tip__grades");
+    for (const r of rows) dl.append(el("dt", r.sub ? "is-sub" : "", r.label), el("dd", "", r.value));
+    box.append(dl);
+    return box;
+  };
+
   // One floating tooltip for every timetable cell, kept inside the popup.
   const tip = el("div", "pp-tip");
   tip.setAttribute("role", "tooltip");
@@ -303,7 +330,9 @@
     const dl = el("dl", "pp-tip__list");
     for (const [label, value, cls] of rows) {
       if (!value) continue;
-      dl.append(el("dt", "", label), el("dd", cls || "", value));
+      const dd = el("dd", cls || "");
+      dd.append(value); // text, or a node such as a link
+      dl.append(el("dt", "", label), dd);
     }
     return dl;
   };
@@ -323,7 +352,7 @@
         ["Thời gian", item.time],
         ["Phòng", real(item.room)],
         ["Giảng viên", real(item.teacher)],
-        ["Hình thức", item.online && "Online"],
+        ["Hình thức", item.online && onlineLink(item)],
         ["Buổi này", session, `is-${item.attended || "none"}`]
       ])
     );
@@ -342,14 +371,38 @@
       );
       tip.append(box);
     }
-    placeTip(cell);
+    if (gradeParts[code]) tip.append(gradeBox(gradeParts[code]));
+    // Component names run long (often Vietnamese); a wider tip keeps them on one line and inside the popup.
+    tip.classList.toggle("is-wide", !!gradeParts[code]?.items?.length);
+    const flm = link("pp-tip__action", gradeParts[code]?.id ? "Mở syllabus trên FLM" : "Tìm môn trên FLM", FuoCore.flmUrl(code, gradeParts[code]));
+    flm.append(arrowIcon());
+    tip.append(flm);
+    placeTip(cell, true);
   }
+
+  // "Online" with the class link when FAP gave one; the link comes from the FAP page, so https only.
+  const onlineLink = (item) => {
+    if (!item.meet?.startsWith("https://")) return "Online";
+    const a = link("pp-tip__link", "Online · Vào lớp", item.meet);
+    a.append(arrowIcon());
+    return a;
+  };
+  const arrowIcon = () => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.innerHTML = '<path d="M8 16 16 8M9.5 8H16v6.5" />';
+    return svg;
+  };
 
   let tipFor = null; // the element the tooltip is showing for
 
   // Under the anchor when it fits, otherwise above; always inside the popup.
-  function placeTip(anchor) {
+  // live: the course tooltip can be hovered into, to copy from it or use its links.
+  function placeTip(anchor, live = false) {
+    clearTimeout(tipTimer);
     tipFor = anchor;
+    tip.classList.toggle("is-live", live);
     tip.hidden = false;
     const r = anchor.getBoundingClientRect();
     const view = document.documentElement;
@@ -360,9 +413,19 @@
   }
 
   function hideTip() {
+    clearTimeout(tipTimer);
     tip.hidden = true;
     tipFor = null;
   }
+
+  // Leaving a course cell waits a moment, long enough to cross the gap into its tooltip.
+  let tipTimer = 0;
+  const hideTipSoon = () => {
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(hideTip, 200);
+  };
+  tip.addEventListener("mouseenter", () => tip.classList.contains("is-live") && clearTimeout(tipTimer));
+  tip.addEventListener("mouseleave", () => tip.classList.contains("is-live") && hideTipSoon());
 
   // Buttons explain themselves with the same tooltip (data-tip-title + data-tip in popup.html).
   function showTextTip(node) {
@@ -387,12 +450,14 @@
   };
 
   const renderTimetable = async () => {
-    const [granted, local, session] = await Promise.all([
+    const [granted, flmGranted, local, session] = await Promise.all([
       chrome.permissions.contains(FAP),
-      chrome.storage.local.get(["fapTimetable", "fapAttendance", "prefs"]),
+      chrome.permissions.contains(FLM),
+      chrome.storage.local.get(["fapTimetable", "fapAttendance", "fapSyllabus", "prefs"]),
       chrome.storage.session.get("fapSync")
     ]);
     const enabled = granted && !!local.prefs?.timetable;
+    $("flmPerm").hidden = !enabled || flmGranted;
     const data = local.fapTimetable?.weeks ? local.fapTimetable : null; // an older single-week cache is refetched
     ttEnabled = enabled;
     // A timetable synced from Google Drive shows even where FAP reading is not turned on.
@@ -413,6 +478,7 @@
     $("ttWeek").textContent = ttWeekLabel(ttView);
     $("ttWeek").classList.toggle("is-current", ttView === thisWeek);
     renderAttendance(local.fapAttendance);
+    gradeParts = local.fapSyllabus || {};
     // The cells were rebuilt: drop a tooltip pinned to an old cell, keep one on a header button.
     if (tipFor && !tipFor.isConnected) hideTip();
 
@@ -427,16 +493,18 @@
       return;
     }
 
-    if (enabled && !ttAsked && !sync && (!data?.weeks[thisWeek] || !local.fapAttendance || Date.now() - data.fetchedAt > TT_STALE_MS)) {
-      ttAsked = true;
-      // Past weeks only change in attendance, so they are walked once, then on manual refresh.
-      ttSync(false, !ttKeys.some((key) => key < thisWeek));
-    }
-
+    // No sync on open: the FAP session is short, so an automatic one kept popping the login tab.
     const [tone, text, hint] = ttStatus(data, sync);
     status.className = `pp-tt__status is-${tone}`;
     status.textContent = text;
     status.title = hint;
+    if (!week && !data && !sync && enabled) {
+      const btn = el("button", "pp-btn pp-btn--primary pp-tt__enable");
+      btn.type = "button";
+      btn.append(el("span", "", "Lấy lịch từ FAP"));
+      btn.addEventListener("click", () => ttSync(true, true));
+      return body.append(btn);
+    }
     if (!week) return body.append(el("p", "pp-tt__note", sync ? "Đang lấy lịch…" : "Chưa có lịch tuần này."));
     body.append(week.items.length ? ttTable(week, today) : el("p", "pp-tt__note", "Không có lớp."));
   };
@@ -446,7 +514,9 @@
     prefs = { ...prefs, timetable: true };
     await chrome.storage.local.set({ prefs });
     try {
-      await chrome.permissions.request(FAP);
+      // One prompt for both sites. The user just asked for it, so the first read starts right away
+      // (if the popup survives the prompt).
+      if (await chrome.permissions.request({ origins: [...FAP.origins, ...FLM.origins] })) ttSync(true, true);
     } catch (err) {
       say(`Không xin được quyền: ${err.message}`, "err");
     }
@@ -464,7 +534,7 @@
   $("ttWeek").addEventListener("click", () => ttStep(0));
   setInterval(() => renderTimetable(), 60000); // keeps "N phút trước" honest while the popup stays open
   chrome.storage.onChanged.addListener((changes) => {
-    if (changes.fapTimetable || changes.fapAttendance || changes.fapSync) renderTimetable();
+    if (changes.fapTimetable || changes.fapAttendance || changes.fapSyllabus || changes.fapSync) renderTimetable();
     if (Object.keys(changes).some((key) => key.startsWith("threads:"))) renderSites();
   });
 
@@ -735,6 +805,14 @@
       say(`Không xin được quyền: ${err.message}`, "err");
     }
     renderPermission();
+  });
+
+  $("flmGrant").addEventListener("click", async () => {
+    try {
+      if (await chrome.permissions.request(FLM)) say("Đã cho phép. Bấm làm mới thời khóa biểu để lấy thành phần điểm.");
+    } catch (err) {
+      say(`Không xin được quyền: ${err.message}`, "err");
+    }
   });
 
   // The permission prompt can outlive (or close) the popup, so react to the grant itself.

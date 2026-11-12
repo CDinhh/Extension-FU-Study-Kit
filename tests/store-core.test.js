@@ -288,3 +288,79 @@ test("calendar reminder channel defaults to a notification and rejects unknown v
   assert.equal(clean("sms"), "popup");
   assert.equal(clean(undefined), "popup");
 });
+
+// Rows as FLM prints them: [category, type, part, weight, criteria].
+const syl = (...rows) => rows.map(([category, type, part, weight, criteria]) => ({ category, type, part, weight, criteria }));
+const show = (items) => C.gradeRows(items).map((r) => `${r.sub ? "  " : ""}${r.label} = ${r.value}`);
+
+test("gradeRows: plain syllabus, trailing colon trimmed, only real minimums shown (WDP301)", () => {
+  const rows = syl(
+    ["On-going Assessment 1", "on-going", "1", "20.0%", ">0"],
+    ["On-going Assessment 2", "on-going", "1", "20.0%", ">0"],
+    ["On-going Assessment 3", "on-going", "1", "20.0%", ">0"],
+    ["Final Project Presentation:", "Final exam", "1", "40.0%", "5"]
+  );
+  assert.deepEqual(show(rows), [
+    "On-going Assessment 1 = 20%",
+    "On-going Assessment 2 = 20%",
+    "On-going Assessment 3 = 20%",
+    "Final Project Presentation = 40% · cần ≥ 5"
+  ]);
+});
+
+test("gradeRows: a final exam split into parts is a group, not '2 lần' (NWC204)", () => {
+  const rows = syl(
+    ["Lab", "on-going", "2", "20.0%", ">0"],
+    ["Midterm Progress Test", "on-going", "1", "10.0%", ">0"],
+    ["Project", "on-going", "1", "20.0%", ">0"],
+    ["Final exam", "Final exam", "2", "50.0%", "4"],
+    ["Practical Exam", "Final exam", "1", "20.0%", "4"],
+    ["Theoretical Exam", "Final exam", "1", "30.0%", "4"]
+  );
+  assert.deepEqual(show(rows), [
+    "Lab (2 lần) = 20%", // the next two rows add to 30%, so Lab is two labs, not a group
+    "Midterm Progress Test = 10%",
+    "Project = 20%",
+    "Final exam = 50% · cần ≥ 4",
+    "  Practical Exam = 20% · cần ≥ 4",
+    "  Theoretical Exam = 30% · cần ≥ 4"
+  ]);
+  const top = C.gradeRows(rows).filter((r) => !r.sub).reduce((s, r) => s + parseFloat(r.value), 0);
+  assert.equal(top, 100);
+});
+
+test("gradeRows: Vietnamese group rows and decimals (JPD113)", () => {
+  const rows = syl(
+    ["Kiểm tra nhỏ (small test)", "on-going", "2", "40.0%", ">0"],
+    ["Tham gia giờ học tại giảng đường", "on-going", "1", "15.0%", ">0"],
+    ["Thi cuối kỳ", "Final exam", "2", "45.0%", "4"],
+    ["Thi cuối kỳ: Từ vựng, ngữ pháp, chữ Hán", "Final exam", "1", "15.0%", ">0"],
+    ["Thi cuối kỳ: Nói", "Final exam", "1", "30.0%", ">0"],
+    ["Lab", "on-going", "6", "12.5%", "0"]
+  );
+  assert.deepEqual(show(rows), [
+    "Kiểm tra nhỏ (small test) (2 lần) = 40%",
+    "Tham gia giờ học tại giảng đường = 15%",
+    "Thi cuối kỳ = 45% · cần ≥ 4",
+    "  Thi cuối kỳ: Từ vựng, ngữ pháp, chữ Hán = 15%",
+    "  Thi cuối kỳ: Nói = 30%",
+    "Lab (6 lần) = 12.5%" // "0" is no minimum either
+  ]);
+});
+
+test("gradeRows: part > 1 on the last rows, odd values and junk do not break", () => {
+  assert.deepEqual(C.gradeRows(undefined), []);
+  assert.deepEqual(C.gradeRows([null, "x"]), []);
+  assert.deepEqual(show(syl(["Assignment", "on-going", "2", "40.0%", ">0"], ["Final exam", "Final exam", "1", "60.0%", ">=4"])), [
+    "Assignment (2 lần) = 40%", // one row below, not two: not a group
+    "Final exam = 60% · >=4" // an unusual criterion is shown as FLM wrote it
+  ]);
+  assert.deepEqual(show(syl(["Participation", "", "", "N/A", ""])), ["Participation = N/A"]);
+});
+
+test("flmUrl opens the syllabus when known, else FLM's search for the code", () => {
+  assert.equal(C.flmUrl("WDP301", { id: 12037, items: [] }), "https://flm.fpt.edu.vn/gui/role/student/SyllabusDetails?sylID=12037");
+  assert.equal(C.flmUrl("LAB211", { id: 0, items: [] }), "https://flm.fpt.edu.vn/gui/role/student/SyllabusManagement?searchOn=Code&keyword=LAB211");
+  assert.equal(C.flmUrl("A&B c", undefined), "https://flm.fpt.edu.vn/gui/role/student/SyllabusManagement?searchOn=Code&keyword=A%26B%20c");
+  assert.equal(C.flmUrl("X", { id: "12037" }).includes("SyllabusManagement"), true); // a non-number id is not trusted
+});
