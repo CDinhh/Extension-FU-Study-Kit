@@ -343,8 +343,15 @@
     const real = (v) => (v && v !== "-" ? v : "");
     const session = item.attendance || { yes: "Có mặt", no: "Vắng" }[item.attended];
     // The cell cuts long names, so the tooltip repeats every detail in full.
+    // Same small square button as "Mở trên FAP", next to the course name.
+    const flm = link("pp-tt__refresh pp-tip__open", "", FuoCore.flmUrl(code, gradeParts[code]));
+    flm.title = gradeParts[code]?.id ? "Mở syllabus trên FLM" : "Tìm môn trên FLM";
+    flm.setAttribute("aria-label", flm.title);
+    flm.append(openIcon());
+    const head = el("div", "pp-tip__head");
+    head.append(el("strong", "pp-tip__name", c?.name || code), flm);
     tip.replaceChildren(
-      el("strong", "pp-tip__name", c?.name || code),
+      head,
       kvList([
         ["Loại", /thi|exam/i.test(item.kind || "") ? "Lịch thi" : item.kind],
         ["Mã môn", code],
@@ -374,9 +381,6 @@
     if (gradeParts[code]) tip.append(gradeBox(gradeParts[code]));
     // Component names run long (often Vietnamese); a wider tip keeps them on one line and inside the popup.
     tip.classList.toggle("is-wide", !!gradeParts[code]?.items?.length);
-    const flm = link("pp-tip__action", gradeParts[code]?.id ? "Mở syllabus trên FLM" : "Tìm môn trên FLM", FuoCore.flmUrl(code, gradeParts[code]));
-    flm.append(arrowIcon());
-    tip.append(flm);
     placeTip(cell, true);
   }
 
@@ -387,13 +391,16 @@
     a.append(arrowIcon());
     return a;
   };
-  const arrowIcon = () => {
+  const svgIcon = (d) => {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 24 24");
     svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = '<path d="M8 16 16 8M9.5 8H16v6.5" />';
+    svg.innerHTML = `<path d="${d}" />`;
     return svg;
   };
+  const arrowIcon = () => svgIcon("M8 16 16 8M9.5 8H16v6.5");
+  // The "open in new tab" icon of the FAP button in popup.html.
+  const openIcon = () => svgIcon("M14 5h5v5M19 5l-8 8M17 13.5V18a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4.5");
 
   let tipFor = null; // the element the tooltip is showing for
 
