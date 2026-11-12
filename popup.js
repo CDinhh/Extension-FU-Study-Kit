@@ -166,7 +166,6 @@
   // --- FAP timetable: background.js reads it from a FAP tab; here we only render the cache. ---
   const FAP = { origins: ["https://fap.fpt.edu.vn/*"] };
   const TT_STALE_MS = 60 * 60 * 1000;
-  let ttAsked = false;
   let ttEnabled = false;
 
   const ttSync = (focus, full) => chrome.runtime.sendMessage({ action: "fapSync", focus, full }).catch(() => {});
@@ -212,7 +211,8 @@
     if (sync?.stage === "attendance") return ["busy", `Đang đọc điểm danh… ${sync.att?.courses.length || 0} môn`, ""];
     if (sync) return ["busy", `Đang đồng bộ… ${sync.count || 0} tuần`, ""];
     if (!at) return ["warn", "Chưa có lịch", ""];
-    return [Date.now() - at > TT_STALE_MS ? "warn" : "ok", `Cập nhật ${ttAgo(at)}`, `Cập nhật lúc ${ttClock(at)} · đã lưu ${Object.keys(data.weeks).length} tuần`];
+    const stale = Date.now() - at > TT_STALE_MS;
+    return [stale ? "warn" : "ok", `Cập nhật ${ttAgo(at)}`, `Cập nhật lúc ${ttClock(at)} · đã lưu ${Object.keys(data.weeks).length} tuần${stale ? " · bấm làm mới để cập nhật" : ""}`];
   };
 
   const ttCell = (item, rowTime) => {
@@ -427,16 +427,18 @@
       return;
     }
 
-    if (enabled && !ttAsked && !sync && (!data?.weeks[thisWeek] || !local.fapAttendance || Date.now() - data.fetchedAt > TT_STALE_MS)) {
-      ttAsked = true;
-      // Past weeks only change in attendance, so they are walked once, then on manual refresh.
-      ttSync(false, !ttKeys.some((key) => key < thisWeek));
-    }
-
+    // No sync on open: the FAP session is short, so an automatic one kept popping the login tab.
     const [tone, text, hint] = ttStatus(data, sync);
     status.className = `pp-tt__status is-${tone}`;
     status.textContent = text;
     status.title = hint;
+    if (!week && !data && !sync && enabled) {
+      const btn = el("button", "pp-btn pp-btn--primary pp-tt__enable");
+      btn.type = "button";
+      btn.append(el("span", "", "Lấy lịch từ FAP"));
+      btn.addEventListener("click", () => ttSync(true, true));
+      return body.append(btn);
+    }
     if (!week) return body.append(el("p", "pp-tt__note", sync ? "Đang lấy lịch…" : "Chưa có lịch tuần này."));
     body.append(week.items.length ? ttTable(week, today) : el("p", "pp-tt__note", "Không có lớp."));
   };
@@ -446,7 +448,8 @@
     prefs = { ...prefs, timetable: true };
     await chrome.storage.local.set({ prefs });
     try {
-      await chrome.permissions.request(FAP);
+      // The user just asked for it, so the first read starts right away (if the popup survives the prompt).
+      if (await chrome.permissions.request(FAP)) ttSync(true, true);
     } catch (err) {
       say(`Không xin được quyền: ${err.message}`, "err");
     }

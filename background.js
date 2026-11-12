@@ -166,6 +166,52 @@ async function readAttendance() {
   };
 }
 
+// Runs inside the FAP page: a cover that says what the sync is doing, so the weeks and course
+// pages flipping underneath make sense (and are not clicked mid-read). step null removes it.
+function fapOverlay(step) {
+  const ID = "fsk-sync-overlay";
+  let host = document.getElementById(ID);
+  if (!step) return void host?.remove();
+  if (!host) {
+    host = document.createElement("div");
+    host.id = ID;
+    // Shadow root: FAP's own CSS cannot reach in.
+    host.attachShadow({ mode: "open" }).innerHTML = `<style>
+      :host { all: initial; }
+      .back { position: fixed; inset: 0; z-index: 2147483647; display: grid; place-items: center;
+        background: rgba(15, 23, 42, .42); backdrop-filter: blur(7px) saturate(1.2); -webkit-backdrop-filter: blur(7px) saturate(1.2);
+        font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; color: #0f172a; animation: fade .25s ease-out; }
+      .card { display: flex; gap: 16px; align-items: center; width: min(400px, calc(100vw - 32px)); box-sizing: border-box; padding: 20px 22px;
+        border-radius: 18px; background: rgba(255, 255, 255, .78); border: 1px solid rgba(255, 255, 255, .7);
+        box-shadow: 0 24px 60px -18px rgba(15, 23, 42, .45), inset 0 1px 0 rgba(255, 255, 255, .9); animation: rise .35s cubic-bezier(.2, .9, .3, 1.2); }
+      .spin { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(37, 99, 235, .18); border-top-color: #2563eb; animation: spin .8s linear infinite; }
+      .done .spin { border-color: #16a34a; animation: pop .3s ease-out; }
+      b { display: block; font-size: 15px; font-weight: 600; }
+      .step { margin: 2px 0 6px; color: #2563eb; font-weight: 500; }
+      .done .step { color: #16a34a; }
+      small { display: block; color: #64748b; font-size: 12px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes fade { from { opacity: 0; } }
+      @keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.97); } }
+      @keyframes pop { 50% { transform: scale(1.15); } }
+      @media (prefers-color-scheme: dark) {
+        .back { background: rgba(2, 6, 23, .55); color: #e2e8f0; }
+        .card { background: rgba(30, 41, 59, .78); border-color: rgba(148, 163, 184, .18); box-shadow: 0 24px 60px -18px rgba(0, 0, 0, .7); }
+        .step { color: #60a5fa; } small { color: #94a3b8; }
+      }
+      @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
+    </style>
+    <div class="back"><div class="card" role="status" aria-live="polite">
+      <div class="spin"></div>
+      <div><b>FU Study Kit đang cập nhật lịch</b><div class="step"></div><small>Tab sẽ tự đóng khi xong. Muốn dừng thì cứ đóng tab.</small></div>
+    </div></div>`;
+    document.documentElement.append(host);
+  }
+  host.shadowRoot.querySelector(".card").classList.toggle("done", step.startsWith("Xong"));
+  host.shadowRoot.querySelector(".step").textContent = step;
+}
+const showOverlay = (tabId, step) => chrome.scripting.executeScript({ target: { tabId }, func: fapOverlay, args: [step] }).catch(() => {});
+
 // "Political economics of Marxism – Leninism (MLN122) (Half2_SE1915)" -> name, code, group.
 const parseCourse = (label) => {
   const m = /^(.*?)\s*\(([^()]+)\)\s*\(([^()]+)\)\s*$/.exec(label);
@@ -201,7 +247,8 @@ async function stepAttendance(tabId, fapSync) {
   }
   await chrome.storage.local.set({ fapAttendance: { fetchedAt: Date.now(), term: att.term, courses: att.courses } });
   await chrome.storage.session.remove("fapSync");
-  chrome.tabs.remove(tabId).catch(() => {});
+  await showOverlay(tabId, `Xong! Đã đọc ${att.courses.length} môn`);
+  setTimeout(() => chrome.tabs.remove(tabId).catch(() => {}), 900); // long enough to read "done"
   return true;
 }
 
@@ -230,6 +277,11 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   const target = attendance ? FAP_ATTENDANCE : FAP_TIMETABLE;
   let started = null;
   try {
+    // Cover the page while it is read; taken off again below if it turns out to need the user.
+    if (tab.url?.startsWith(target)) {
+      const att = fapSync.att;
+      await showOverlay(tabId, !attendance ? "Đang đọc thời khóa biểu…" : att ? `Đang đọc điểm danh… môn ${att.courses.length + 1}/${att.courses.length + att.queue.length + 1}` : "Đang đọc điểm danh…");
+    }
     if (attendance) {
       started = await stepAttendance(tabId, fapSync);
     } else {
@@ -244,6 +296,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
     if (tab.url?.startsWith(FAP_ORIGIN)) return;
   }
   if (started) return;
+  await showOverlay(tabId, null);
 
   // Signed in but landed elsewhere (login lost the return URL): go back to the page, once.
   const onFap = tab.url?.startsWith(FAP_ORIGIN) && !tab.url.startsWith(target) && !/\/auth\//i.test(tab.url);
@@ -275,7 +328,9 @@ async function onFapCrawl(message, sender) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(message.key) || !Array.isArray(message.days) || !Array.isArray(message.items)) return;
     weeks[message.key] = { days: message.days, items: message.items };
     await chrome.storage.local.set({ fapTimetable: { fetchedAt: fapTimetable?.fetchedAt || 0, weeks } });
-    await chrome.storage.session.set({ fapSync: { ...fapSync, state: "loading", count: (fapSync.count || 0) + 1 } });
+    const count = (fapSync.count || 0) + 1;
+    await chrome.storage.session.set({ fapSync: { ...fapSync, state: "loading", count } });
+    showOverlay(fapSync.tabId, `Đang đọc thời khóa biểu… ${count} tuần`);
     return;
   }
   for (const key of Array.isArray(message.drop) ? message.drop : []) delete weeks[key];
