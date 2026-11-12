@@ -42,6 +42,10 @@
         "*://fuexam.me/*",
         "*://*.fuexam.me/*"
       ]
+    },
+    {
+      "resources": ["assets/icons/icon-128.png", "assets/fonts/*"],
+      "matches": ["https://fap.fpt.edu.vn/*"]
     }
   ],
   "content_scripts": [

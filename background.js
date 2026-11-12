@@ -35,8 +35,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // read once the user is through.
 const FAP_ORIGIN = "https://fap.fpt.edu.vn";
 const FAP_TIMETABLE = `${FAP_ORIGIN}/WeeklyTimetable`;
-// After the timetable, the same tab reads the attendance report: one page load per course.
-const FAP_ATTENDANCE = `${FAP_ORIGIN}/Report/Attendance`;
 
 // Runs inside the FAP page. Selectors are class/icon based so they hold in both UI languages.
 // Weeks are sent one by one (fapWeek) instead of returned: a long crawl would outlive the
@@ -144,73 +142,141 @@ async function crawlTimetable(full) {
   return "done";
 }
 
-// Runs inside the attendance report: the courses of the selected term, and the sessions of the
-// course on screen counted by their status class (works in both UI languages).
+// Runs inside the FAP tab once the timetable is read. The attendance report is server-rendered,
+// so each course page is fetched and parsed here instead of navigated to: the tab (and its
+// overlay) stays put. Sessions are counted by status class, which holds in both UI languages.
 async function readAttendance() {
   const text = (node) => (node ? node.textContent.replace(/\s+/g, " ").trim() : "");
-  const ready = () => document.getElementById("attendance-report-course") && document.querySelector(".fap-result-card__title");
-  for (let i = 0; !ready() && i < 24; i++) await new Promise((resolve) => setTimeout(resolve, 250));
-  const course = document.getElementById("attendance-report-course");
-  const term = document.getElementById("attendance-report-term");
-  if (!course || !term) return null;
-  const count = (state) => document.querySelectorAll(`.attendance-session-sheet .attendance-status--${state}`).length;
-  return {
-    termId: term.value,
-    term: text(term.selectedOptions[0]),
-    courseId: course.value,
-    courses: [...course.options].map((option) => ({ id: option.value, label: text(option) })),
-    present: count("present"),
-    absent: count("absent"),
-    pending: count("pending"),
-    total: document.querySelectorAll(".attendance-session-sheet tbody tr .attendance-status").length
+  const show = globalThis.__fskOverlay || (() => {});
+  const load = async (query = "") => {
+    const res = await fetch(`/Report/Attendance${query}`, { credentials: "same-origin" });
+    return res.ok ? new DOMParser().parseFromString(await res.text(), "text/html") : null;
   };
+  const count = (doc, state) => doc.querySelectorAll(`.attendance-session-sheet .attendance-status--${state}`).length;
+
+  const first = await load().catch(() => null);
+  const course = first?.getElementById("attendance-report-course");
+  const term = first?.getElementById("attendance-report-term");
+  if (!course || !term) return null; // signed out mid-sync: keep the attendance we had
+  const courses = [...course.options].map((option) => ({ id: option.value, label: text(option) })).filter((c) => c.id);
+  const out = [];
+  for (const [i, c] of courses.entries()) {
+    show({ stage: "att", text: `Đang đọc điểm danh môn ${i + 1}/${courses.length}`, progress: i / courses.length });
+    const doc = c.id === course.value ? first : await load(`?termId=${encodeURIComponent(term.value)}&courseId=${encodeURIComponent(c.id)}`).catch(() => null);
+    if (doc?.getElementById("attendance-report-course")?.value !== c.id) continue;
+    out.push({
+      ...c,
+      present: count(doc, "present"),
+      absent: count(doc, "absent"),
+      pending: count(doc, "pending"),
+      total: doc.querySelectorAll(".attendance-session-sheet tbody tr .attendance-status").length
+    });
+  }
+  return { term: text(term.selectedOptions[0]), courses: out };
 }
 
-// Runs inside the FAP page: a cover that says what the sync is doing, so the weeks and course
-// pages flipping underneath make sense (and are not clicked mid-read). step null removes it.
-function fapOverlay(step) {
+// Runs inside the FAP page: a cover that says what the sync is doing, so the weeks flipping
+// underneath make sense and are not clicked mid-read. state = {stage: "tt"|"att"|"done", text,
+// progress 0..1 or null}; null takes it off. base is the extension URL, for the logo and font.
+function fapOverlay(state, base) {
   const ID = "fsk-sync-overlay";
   let host = document.getElementById(ID);
-  if (!step) return void host?.remove();
+  if (!state) return void host?.remove();
+  globalThis.__fskOverlay = (next) => fapOverlay(next, base); // readAttendance updates it in place
   if (!host) {
+    if (base && !document.fonts.check("12px FSKVietnam")) {
+      for (const [weight, file] of [["500", "latin-500"], ["600", "latin-600"], ["500", "vietnamese-500"], ["600", "vietnamese-600"]]) {
+        const font = new FontFace("FSKVietnam", `url(${base}assets/fonts/be-vietnam-pro-${file}.woff2)`, { weight });
+        document.fonts.add(font);
+        font.load().catch(() => {});
+      }
+    }
     host = document.createElement("div");
     host.id = ID;
     // Shadow root: FAP's own CSS cannot reach in.
     host.attachShadow({ mode: "open" }).innerHTML = `<style>
       :host { all: initial; }
-      .back { position: fixed; inset: 0; z-index: 2147483647; display: grid; place-items: center;
-        background: rgba(15, 23, 42, .42); backdrop-filter: blur(7px) saturate(1.2); -webkit-backdrop-filter: blur(7px) saturate(1.2);
-        font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; color: #0f172a; animation: fade .25s ease-out; }
-      .card { display: flex; gap: 16px; align-items: center; width: min(400px, calc(100vw - 32px)); box-sizing: border-box; padding: 20px 22px;
-        border-radius: 18px; background: rgba(255, 255, 255, .78); border: 1px solid rgba(255, 255, 255, .7);
-        box-shadow: 0 24px 60px -18px rgba(15, 23, 42, .45), inset 0 1px 0 rgba(255, 255, 255, .9); animation: rise .35s cubic-bezier(.2, .9, .3, 1.2); }
-      .spin { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(37, 99, 235, .18); border-top-color: #2563eb; animation: spin .8s linear infinite; }
-      .done .spin { border-color: #16a34a; animation: pop .3s ease-out; }
-      b { display: block; font-size: 15px; font-weight: 600; }
-      .step { margin: 2px 0 6px; color: #2563eb; font-weight: 500; }
-      .done .step { color: #16a34a; }
-      small { display: block; color: #64748b; font-size: 12px; }
+      * { box-sizing: border-box; }
+      .back { position: fixed; inset: 0; z-index: 2147483647; display: grid; place-items: center; padding: 16px;
+        --accent: #2563eb; --accent-rgb: 37, 99, 235; --done: #138a55; --done-rgb: 19, 138, 85; --text: #161a22; --muted: rgba(22, 26, 34, .56);
+        --glass: rgba(255, 255, 255, .72); --edge: rgba(255, 255, 255, .85); --track: rgba(15, 23, 42, .07);
+        background: rgba(243, 244, 247, .6);
+        backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4);
+        font: 500 14px/1.45 FSKVietnam, "Segoe UI", system-ui, sans-serif; color: var(--text); animation: fade .3s ease-out; }
+      .card { width: min(380px, 100%); padding: 28px 28px 22px; border-radius: 26px; text-align: center;
+        background: var(--glass); border: 1px solid var(--edge);
+        box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 30px 70px -24px rgba(15, 23, 42, .35), 0 8px 24px -12px rgba(15, 23, 42, .18);
+        animation: rise .5s cubic-bezier(.32, .72, 0, 1); }
+      .logo { position: relative; width: 76px; height: 76px; margin: 0 auto 18px; display: grid; place-items: center; }
+      .logo img { width: 52px; height: 52px; border-radius: 16px; box-shadow: 0 10px 24px -10px rgba(var(--accent-rgb), .55); }
+      .ring { position: absolute; inset: 0; border-radius: 50%;
+        background: conic-gradient(from 0deg, transparent 0 55%, rgba(var(--accent-rgb), .9));
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+        animation: spin 1s linear infinite; transition: opacity .3s; }
+      .tick { position: absolute; right: 2px; bottom: 2px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+        background: var(--done); color: #fff; box-shadow: 0 0 0 3px var(--glass); transform: scale(0); transition: transform .4s cubic-bezier(.34, 1.56, .64, 1); }
+      .tick svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+      .step { margin: 4px 0 18px; min-height: 20px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+      .steps { display: flex; justify-content: center; gap: 6px; margin-bottom: 14px; }
+      .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px 5px 9px; border-radius: 999px; font-size: 12px;
+        color: var(--muted); background: var(--track); transition: background .3s, color .3s; }
+      .chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .45; transition: opacity .3s; }
+      .chip.on { color: var(--accent); background: rgba(var(--accent-rgb), .1); }
+      .chip.on i { opacity: 1; animation: pulse 1.2s ease-in-out infinite; }
+      .chip.ok { color: var(--done); background: rgba(var(--done-rgb), .1); }
+      .chip.ok i { opacity: 1; }
+      .bar { height: 6px; border-radius: 99px; background: var(--track); overflow: hidden; }
+      .fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, rgba(var(--accent-rgb), .6), var(--accent));
+        transition: width .45s cubic-bezier(.32, .72, 0, 1); }
+      .bar.wait .fill { width: 35%; animation: slide 1.3s cubic-bezier(.45, 0, .55, 1) infinite; }
+      small { display: block; margin-top: 14px; color: var(--muted); font-size: 11.5px; }
+      .done .ring { animation: none; opacity: 0; }
+      .done .tick { transform: scale(1); }
+      .done .fill { background: var(--done); }
       @keyframes spin { to { transform: rotate(360deg); } }
       @keyframes fade { from { opacity: 0; } }
-      @keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.97); } }
-      @keyframes pop { 50% { transform: scale(1.15); } }
+      @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+      @keyframes pulse { 50% { transform: scale(.6); } }
+      @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
       @media (prefers-color-scheme: dark) {
-        .back { background: rgba(2, 6, 23, .55); color: #e2e8f0; }
-        .card { background: rgba(30, 41, 59, .78); border-color: rgba(148, 163, 184, .18); box-shadow: 0 24px 60px -18px rgba(0, 0, 0, .7); }
-        .step { color: #60a5fa; } small { color: #94a3b8; }
+        .back { --text: #e8eaf0; --muted: rgba(232, 234, 240, .58); --accent: #5b8cff; --accent-rgb: 91, 140, 255; --done: #34c07f; --done-rgb: 52, 192, 127;
+          --glass: rgba(24, 27, 34, .74); --edge: rgba(255, 255, 255, .08); --track: rgba(255, 255, 255, .08);
+          background: rgba(11, 12, 15, .72); }
+        .card { box-shadow: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 30px 70px -24px rgba(0, 0, 0, .8); }
       }
-      @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
+      @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; } }
     </style>
     <div class="back"><div class="card" role="status" aria-live="polite">
-      <div class="spin"></div>
-      <div><b>FU Study Kit đang cập nhật lịch</b><div class="step"></div><small>Tab sẽ tự đóng khi xong. Muốn dừng thì cứ đóng tab.</small></div>
+      <div class="logo"><div class="ring"></div><img alt="" /><div class="tick"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></div></div>
+      <h2></h2>
+      <div class="step"></div>
+      <div class="steps"><span class="chip" data-s="tt"><i></i>Thời khóa biểu</span><span class="chip" data-s="att"><i></i>Điểm danh</span></div>
+      <div class="bar"><div class="fill"></div></div>
+      <small>Tab sẽ tự đóng khi xong · đóng tab nếu muốn dừng</small>
     </div></div>`;
+    if (base) host.shadowRoot.querySelector("img").src = `${base}assets/icons/icon-128.png`;
     document.documentElement.append(host);
   }
-  host.shadowRoot.querySelector(".card").classList.toggle("done", step.startsWith("Xong"));
-  host.shadowRoot.querySelector(".step").textContent = step;
+  const root = host.shadowRoot;
+  const done = state.stage === "done";
+  const order = ["tt", "att"];
+  const now = done ? order.length : order.indexOf(state.stage);
+  root.querySelector(".card").classList.toggle("done", done);
+  root.querySelector("h2").textContent = done ? "Đã cập nhật xong" : "Đang cập nhật lịch học";
+  root.querySelector(".step").textContent = state.text || "";
+  for (const chip of root.querySelectorAll(".chip")) {
+    const at = order.indexOf(chip.dataset.s);
+    chip.classList.toggle("ok", at < now);
+    chip.classList.toggle("on", at === now);
+  }
+  const progress = done ? 1 : state.progress;
+  root.querySelector(".bar").classList.toggle("wait", progress == null);
+  root.querySelector(".fill").style.width = progress == null ? "" : `${Math.round(progress * 100)}%`;
 }
-const showOverlay = (tabId, step) => chrome.scripting.executeScript({ target: { tabId }, func: fapOverlay, args: [step] }).catch(() => {});
+const showOverlay = (tabId, state) =>
+  chrome.scripting.executeScript({ target: { tabId }, func: fapOverlay, args: [state, chrome.runtime.getURL("")] }).catch(() => {});
 
 // "Political economics of Marxism – Leninism (MLN122) (Half2_SE1915)" -> name, code, group.
 const parseCourse = (label) => {
@@ -218,38 +284,25 @@ const parseCourse = (label) => {
   return m ? { name: m[1], code: m[2], group: m[3] } : { name: label, code: label, group: "" };
 };
 
-// One course page has loaded: keep its numbers, then open the next course or finish.
-async function stepAttendance(tabId, fapSync) {
-  const [{ result: page }] = await chrome.scripting.executeScript({ target: { tabId }, func: readAttendance });
-  if (!page) return false;
+// Timetable stored: read attendance in the same tab, keep it, show "done" and close the tab.
+async function finishFapSync(tabId) {
+  await showOverlay(tabId, { stage: "att", text: "Đang mở báo cáo điểm danh…", progress: null });
+  let page = null;
+  try {
+    [{ result: page }] = await chrome.scripting.executeScript({ target: { tabId }, func: readAttendance });
+  } catch {
+    // Tab closed or navigated away: the timetable is already stored, attendance stays as it was.
+  }
   // Page data, so only keep checked fields.
   const str = (v) => String(v ?? "").slice(0, 160);
   const num = (v) => (Number.isInteger(v) && v >= 0 && v <= 500 ? v : 0);
-  const courses = Array.isArray(page.courses) ? page.courses.slice(0, 40).map((c) => ({ id: str(c?.id), label: str(c?.label) })) : [];
-  const att = fapSync.att || {
-    termId: str(page.termId),
-    term: str(page.term),
-    queue: courses.map((c) => c.id).filter((id) => id && id !== page.courseId),
-    labels: Object.fromEntries(courses.map((c) => [c.id, c.label])),
-    courses: []
-  };
-  const id = str(page.courseId);
-  if (id && !att.courses.some((c) => c.id === id)) {
-    const { present, absent, pending, total } = page;
-    att.courses.push({ id, ...parseCourse(att.labels[id] || id), present: num(present), absent: num(absent), pending: num(pending), total: num(total) });
-  }
-  const next = att.queue.shift();
-  if (next) {
-    await chrome.storage.session.set({ fapSync: { ...fapSync, state: "loading", att } });
-    const url = `${FAP_ATTENDANCE}?termId=${encodeURIComponent(att.termId)}&courseId=${encodeURIComponent(next)}`;
-    chrome.tabs.update(tabId, { url }).catch(() => {});
-    return true;
-  }
-  await chrome.storage.local.set({ fapAttendance: { fetchedAt: Date.now(), term: att.term, courses: att.courses } });
+  const courses = Array.isArray(page?.courses)
+    ? page.courses.slice(0, 40).map((c) => ({ id: str(c?.id), ...parseCourse(str(c?.label)), present: num(c?.present), absent: num(c?.absent), pending: num(c?.pending), total: num(c?.total) }))
+    : null;
+  if (courses) await chrome.storage.local.set({ fapAttendance: { fetchedAt: Date.now(), term: str(page.term), courses } });
   await chrome.storage.session.remove("fapSync");
-  await showOverlay(tabId, `Xong! Đã đọc ${att.courses.length} môn`);
-  setTimeout(() => chrome.tabs.remove(tabId).catch(() => {}), 900); // long enough to read "done"
-  return true;
+  await showOverlay(tabId, { stage: "done", text: courses ? `Đã đọc thời khóa biểu và điểm danh ${courses.length} môn` : "Đã đọc thời khóa biểu" });
+  setTimeout(() => chrome.tabs.remove(tabId).catch(() => {}), 1200); // long enough to see "done"
 }
 
 async function startFapSync(focus, full) {
@@ -273,23 +326,16 @@ chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
   const { fapSync } = await chrome.storage.session.get("fapSync");
   if (fapSync?.tabId !== tabId) return;
 
-  const attendance = fapSync.stage === "attendance";
-  const target = attendance ? FAP_ATTENDANCE : FAP_TIMETABLE;
+  if (fapSync.stage === "attendance") return; // read by fetch inside the page, no load to react to
+  const target = FAP_TIMETABLE;
   let started = null;
   try {
     // Cover the page while it is read; taken off again below if it turns out to need the user.
-    if (tab.url?.startsWith(target)) {
-      const att = fapSync.att;
-      await showOverlay(tabId, !attendance ? "Đang đọc thời khóa biểu…" : att ? `Đang đọc điểm danh… môn ${att.courses.length + 1}/${att.courses.length + att.queue.length + 1}` : "Đang đọc điểm danh…");
-    }
-    if (attendance) {
-      started = await stepAttendance(tabId, fapSync);
-    } else {
-      // Not awaited to the end: the crawl reports through fapWeek / fapDone messages.
-      const run = chrome.scripting.executeScript({ target: { tabId }, func: crawlTimetable, args: [!!fapSync.full] });
-      run.catch(() => {});
-      started = await Promise.race([run.then(([res]) => res?.result ?? null), new Promise((resolve) => setTimeout(() => resolve("running"), 6000))]);
-    }
+    if (tab.url?.startsWith(target)) await showOverlay(tabId, { stage: "tt", text: "Đang đọc tuần đầu tiên…", progress: null });
+    // Not awaited to the end: the crawl reports through fapWeek / fapDone messages.
+    const run = chrome.scripting.executeScript({ target: { tabId }, func: crawlTimetable, args: [!!fapSync.full] });
+    run.catch(() => {});
+    started = await Promise.race([run.then(([res]) => res?.result ?? null), new Promise((resolve) => setTimeout(() => resolve("running"), 6000))]);
   } catch {
     // On FAP this means the page navigated mid-read (Cloudflare check passing); the next load
     // reports again. Anywhere else it is the sign-in provider, which we cannot and need not read.
@@ -330,15 +376,15 @@ async function onFapCrawl(message, sender) {
     await chrome.storage.local.set({ fapTimetable: { fetchedAt: fapTimetable?.fetchedAt || 0, weeks } });
     const count = (fapSync.count || 0) + 1;
     await chrome.storage.session.set({ fapSync: { ...fapSync, state: "loading", count } });
-    showOverlay(fapSync.tabId, `Đang đọc thời khóa biểu… ${count} tuần`);
+    showOverlay(fapSync.tabId, { stage: "tt", text: `Đã đọc ${count} tuần`, progress: null });
     return;
   }
   for (const key of Array.isArray(message.drop) ? message.drop : []) delete weeks[key];
   await chrome.storage.local.set({ fapTimetable: { fetchedAt: Date.now(), weeks } });
   if (fapSync.stage === "attendance") return; // a late fapDone; the timetable is already stored
-  // Timetable done; the same tab moves on to the attendance report.
-  await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "attendance", state: "loading", redirected: false } });
-  chrome.tabs.update(fapSync.tabId, { url: FAP_ATTENDANCE }).catch(() => {});
+  // Timetable done; the same tab reads attendance next (not awaited: the page waits on this answer).
+  await chrome.storage.session.set({ fapSync: { ...fapSync, stage: "attendance", state: "loading" } });
+  finishFapSync(fapSync.tabId);
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

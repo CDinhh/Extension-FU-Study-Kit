@@ -208,7 +208,7 @@
   const ttStatus = (data, sync) => {
     const at = data?.fetchedAt;
     if (sync?.state === "attention") return ["warn", "Chờ đăng nhập FAP", "Đăng nhập ở tab FAP vừa mở, lịch sẽ tự cập nhật"];
-    if (sync?.stage === "attendance") return ["busy", `Đang đọc điểm danh… ${sync.att?.courses.length || 0} môn`, ""];
+    if (sync?.stage === "attendance") return ["busy", "Đang đọc điểm danh…", ""];
     if (sync) return ["busy", `Đang đồng bộ… ${sync.count || 0} tuần`, ""];
     if (!at) return ["warn", "Chưa có lịch", ""];
     const stale = Date.now() - at > TT_STALE_MS;
